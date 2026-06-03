@@ -23,8 +23,8 @@ This folder holds the engineering-side reference that complements it.
   tokens and Fyne constraints defined in `spec.md`. If a design choice
   conflicts with §12 (e.g. button gradients, per-corner radius), the spec
   wins — bring it up before shipping.
-- **Engineer**: implements `internal/ui/theme/` directly from §2–4 of
-  `spec.md`. Every other UI package reads colors and sizes from `theme`
+- **Engineer**: implements the theme layer directly from §2–4 of
+  `spec.md`. Every other UI package reads colors and sizes from the theme
   only — no hardcoded values. Use Figma for the visual reference of a
   screen, but pull all numbers from the spec.
 

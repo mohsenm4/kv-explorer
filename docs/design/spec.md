@@ -9,8 +9,8 @@ states, and accessibility. Two themes — light and dark — are described in
 parallel so any token has a value in both.
 
 > **Implementation note.** All tokens map 1-to-1 to Fyne's `theme.ColorName`
-> and `theme.SizeName`. The Fyne layer at `internal/ui/theme/` must read from
-> this token list — no colors or sizes may be hardcoded elsewhere in the UI.
+> and `theme.SizeName`. The theme layer must read from this token list —
+> no colors or sizes may be hardcoded elsewhere in the UI.
 
 ---
 
