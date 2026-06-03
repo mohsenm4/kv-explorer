@@ -84,10 +84,19 @@ The project is in the **bootstrap** phase. The base structure has been created;
 no core modules have been implemented yet. The first step is to implement the
 `KVStore` interface and the three database adapters.
 
-## Notes for Claude
+## Notes for AI Assistants
 
 - Before making large architectural changes, enter **plan mode**.
 - Before every commit, ensure `go vet` and `go test ./...` pass.
 - When a file in `internal/databases/<x>/` changes, verify the other adapters
   still satisfy the interface uniformly.
 - For specialized tasks, use the subagents defined in `.claude/agents/`.
+
+## Commit Conventions
+
+- **Do not add AI attribution to commits.** No `Co-Authored-By: Claude ...`,
+  no `Generated with ...` trailers, no signatures referencing any AI tool.
+- Keep commit messages short, plain English, and human-sounding. One line is
+  usually enough; two if context is needed.
+- Never modify `git config user.name` or `user.email`. Commits stay under the
+  repo owner's identity.
