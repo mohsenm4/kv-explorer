@@ -38,3 +38,7 @@ CLAUDE.local.md
 # Logs
 *.log
 logs/
+
+# Local sandbox / scratch directories
+Untitled/
+scratch/
