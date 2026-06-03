@@ -19,9 +19,10 @@ type FilterState struct {
 	Query string
 }
 
-// filterRow returns the search row that sits above the key table.
+// filterRow returns the search row that sits above the key table plus the
+// Entry widget itself so shortcuts can focus it.
 // onChange fires (debounced) after the user stops typing.
-func filterRow(state *FilterState, onChange func()) fyne.CanvasObject {
+func filterRow(state *FilterState, onChange func()) (fyne.CanvasObject, *widget.Entry) {
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder("Filter keys…")
 
@@ -48,7 +49,7 @@ func filterRow(state *FilterState, onChange func()) fyne.CanvasObject {
 	})
 	filterBtn.IconPlacement = widget.ButtonIconLeadingText
 
-	return container.NewBorder(nil, nil, nil, filterBtn, search)
+	return container.NewBorder(nil, nil, nil, filterBtn, search), entry
 }
 
 // applyFilter returns the subset of keys that match the filter state.

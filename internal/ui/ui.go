@@ -11,6 +11,17 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
+// appHandlers is the set of cross-cutting actions that ui-level shortcuts
+// fire. mainPage fills it on construction; ui.go's shortcut wiring uses
+// the latest values via the pointer.
+type appHandlers struct {
+	addKey      func()
+	editKey     func()
+	deleteKey   func()
+	refresh     func()
+	focusFilter func()
+}
+
 func Run() {
 	a := fyneapp.NewWithID("com.kvexplorer.app")
 
@@ -24,6 +35,7 @@ func Run() {
 
 	var session *app.Session
 	var render func()
+	handlers := &appHandlers{}
 
 	setTheme := func(pref string) {
 		themePref = pref
@@ -57,6 +69,8 @@ func Run() {
 			_ = session.Close()
 			session = nil
 		}
+		// Clear cross-cutting handlers so shortcuts no-op on welcome.
+		*handlers = appHandlers{}
 		render()
 	}
 
@@ -78,14 +92,16 @@ func Run() {
 
 	render = func() {
 		if session == nil {
+			*handlers = appHandlers{}
 			w.SetContent(welcomePage(a, w, &variant, toggleTheme, openReq))
 		} else {
-			w.SetContent(mainPage(a, w, session, &variant, openFromMain, closeSess, toggleTheme, openSettings))
+			w.SetContent(mainPage(a, w, session, &variant, openFromMain, closeSess, toggleTheme, openSettings, handlers))
 		}
 	}
 	render()
 
 	w.SetMainMenu(mainMenu(w, openFromMain, closeSess, toggleTheme, openSettings))
+	registerShortcuts(w, handlers)
 
 	w.ShowAndRun()
 }

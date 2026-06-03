@@ -12,7 +12,7 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeVariant, onOpen, onClose, onToggle, onSettings func()) fyne.CanvasObject {
+func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeVariant, onOpen, onClose, onToggle, onSettings func(), handlers *appHandlers) fyne.CanvasObject {
 	v := *variant
 
 	accent := canvas.NewRectangle(apptheme.DBAccent(string(sess.Engine), v))
@@ -69,7 +69,7 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	table = keyTable(sess, filter, loadEditorFor)
 	rebuildTree()
 
-	filterUI := filterRow(filter, func() {
+	filterUI, filterEntry := filterRow(filter, func() {
 		table.Refresh()
 	})
 
@@ -97,6 +97,12 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	toolbar = buildToolbar(actions)
 	toolbar.editBtn.Disable()
 	toolbar.deleteBtn.Disable()
+
+	handlers.addKey = actions.OnAdd
+	handlers.editKey = actions.OnEdit
+	handlers.deleteKey = actions.OnDelete
+	handlers.refresh = refreshAll
+	handlers.focusFilter = func() { w.Canvas().Focus(filterEntry) }
 
 	tabs := tabStrip(v, sess)
 

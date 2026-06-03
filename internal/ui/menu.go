@@ -3,17 +3,27 @@ package ui
 import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 )
 
 // mainMenu builds the File/Edit/View/Help menu. On macOS Fyne renders this
 // in the system menu bar (top of screen); on Linux/Windows it sits inside
 // the window as a strip under the title bar.
 func mainMenu(w fyne.Window, openDialog, closeSession, toggleTheme, openSettings func()) *fyne.MainMenu {
+	openItem := fyne.NewMenuItem("Open…", openDialog)
+	openItem.Shortcut = shortcut(fyne.KeyO, fyne.KeyModifierShortcutDefault)
+
+	closeItem := fyne.NewMenuItem("Close", closeSession)
+	closeItem.Shortcut = shortcut(fyne.KeyW, fyne.KeyModifierShortcutDefault)
+
+	settingsItem := fyne.NewMenuItem("Settings…", openSettings)
+	settingsItem.Shortcut = shortcut(fyne.KeyComma, fyne.KeyModifierShortcutDefault)
+
 	file := fyne.NewMenu("File",
-		fyne.NewMenuItem("Open…", openDialog),
-		fyne.NewMenuItem("Close", closeSession),
+		openItem,
+		closeItem,
 		fyne.NewMenuItemSeparator(),
-		fyne.NewMenuItem("Settings…", openSettings),
+		settingsItem,
 	)
 	edit := fyne.NewMenu("Edit",
 		disabledItem("Add Key…"),
@@ -38,4 +48,8 @@ func disabledItem(label string) *fyne.MenuItem {
 	it := fyne.NewMenuItem(label, func() {})
 	it.Disabled = true
 	return it
+}
+
+func shortcut(key fyne.KeyName, mod fyne.KeyModifier) *desktop.CustomShortcut {
+	return &desktop.CustomShortcut{KeyName: key, Modifier: mod}
 }
