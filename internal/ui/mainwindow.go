@@ -22,13 +22,18 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	tabs := tabStrip(v, sess)
 
 	editorBox := container.NewStack(emptyEditor(v))
+	filter := &FilterState{}
 
 	var table *widget.Table
-	table = keyTable(sess, func(e kvstore.Entry) {
+	table = keyTable(sess, filter, func(e kvstore.Entry) {
 		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, e, func() {
 			table.Refresh()
 		})}
 		editorBox.Refresh()
+	})
+
+	filterUI := filterRow(filter, func() {
+		table.Refresh()
 	})
 
 	left := prefixTree(sess, func(key []byte) {
@@ -42,7 +47,8 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 		editorBox.Refresh()
 	})
 
-	center := container.NewVSplit(table, editorBox)
+	tableWithFilter := container.NewBorder(container.NewPadded(filterUI), nil, nil, nil, table)
+	center := container.NewVSplit(tableWithFilter, editorBox)
 	center.Offset = 0.62
 
 	split := container.NewHSplit(left, center)

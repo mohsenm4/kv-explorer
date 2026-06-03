@@ -9,15 +9,16 @@ import (
 )
 
 // keyTable renders the central table of key / value preview / size. Cells
-// pull from sess.Entries() on each render so calling sess.Refresh() +
-// table.Refresh() will pick up edits made by the editor.
+// pull from sess.Entries() filtered by the shared FilterState on every
+// render, so calling sess.Refresh()/table.Refresh() picks up edits and
+// filter changes alike.
 // onSelect fires when the user picks a row.
-func keyTable(sess *app.Session, onSelect func(kvstore.Entry)) *widget.Table {
+func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entry)) *widget.Table {
 	headers := []string{"Key", "Value preview", "Size"}
 
 	read := func() []kvstore.Entry {
 		entries, _ := sess.Entries()
-		return entries
+		return applyFilter(entries, *filter)
 	}
 
 	table := widget.NewTableWithHeaders(
