@@ -9,14 +9,34 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func buildToolbar(onOpen, onClose func()) fyne.CanvasObject {
-	open := toolbarButton("Open", fynetheme.FolderOpenIcon(), onOpen)
-	closeBtn := toolbarButton("Close", fynetheme.CancelIcon(), onClose)
-	add := toolbarButton("Add", fynetheme.ContentAddIcon(), nil)
-	edit := toolbarButton("Edit", fynetheme.DocumentCreateIcon(), nil)
-	del := toolbarButton("Delete", fynetheme.DeleteIcon(), nil)
-	refresh := toolbarButton("Refresh", fynetheme.ViewRefreshIcon(), nil)
-	settings := toolbarButton("", fynetheme.SettingsIcon(), nil)
+// ToolbarActions groups the callbacks the top toolbar can fire. nil
+// callbacks render their button as disabled.
+type ToolbarActions struct {
+	OnOpen     func()
+	OnClose    func()
+	OnAdd      func()
+	OnEdit     func()
+	OnDelete   func()
+	OnRefresh  func()
+	OnSettings func()
+}
+
+// toolbarHandles lets the parent flip Edit/Delete enable state when the
+// table selection changes.
+type toolbarHandles struct {
+	bar        fyne.CanvasObject
+	editBtn    *widget.Button
+	deleteBtn  *widget.Button
+}
+
+func buildToolbar(actions ToolbarActions) toolbarHandles {
+	open := toolbarButton("Open", fynetheme.FolderOpenIcon(), actions.OnOpen)
+	closeBtn := toolbarButton("Close", fynetheme.CancelIcon(), actions.OnClose)
+	add := toolbarButton("Add", fynetheme.ContentAddIcon(), actions.OnAdd)
+	edit := toolbarButton("Edit", fynetheme.DocumentCreateIcon(), actions.OnEdit)
+	del := toolbarButton("Delete", fynetheme.DeleteIcon(), actions.OnDelete)
+	refresh := toolbarButton("Refresh", fynetheme.ViewRefreshIcon(), actions.OnRefresh)
+	settings := toolbarButton("", fynetheme.SettingsIcon(), actions.OnSettings)
 
 	row := container.NewHBox(
 		open, closeBtn,
@@ -31,7 +51,11 @@ func buildToolbar(onOpen, onClose func()) fyne.CanvasObject {
 		fynetheme.ColorNameHeaderBackground,
 		fyne.CurrentApp().Settings().ThemeVariant(),
 	))
-	return container.NewStack(bg, container.NewPadded(row))
+	return toolbarHandles{
+		bar:       container.NewStack(bg, container.NewPadded(row)),
+		editBtn:   edit,
+		deleteBtn: del,
+	}
 }
 
 func toolbarButton(label string, icon fyne.Resource, action func()) *widget.Button {

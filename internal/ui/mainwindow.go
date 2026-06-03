@@ -18,40 +18,93 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	accent := canvas.NewRectangle(apptheme.DBAccent(string(sess.Engine), v))
 	accent.SetMinSize(fyne.NewSize(0, 3))
 
-	bar := buildToolbar(onOpen, onClose)
-	tabs := tabStrip(v, sess)
-
 	editorBox := container.NewStack(emptyEditor(v))
+	treeBox := container.NewStack()
 	filter := &FilterState{}
 
+	var current *kvstore.Entry
 	var table *widget.Table
-	table = keyTable(sess, filter, func(e kvstore.Entry) {
+	var toolbar toolbarHandles
+
+	loadEditorFor := func(e kvstore.Entry) {
+		current = &e
 		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, w, e, func() {
 			table.Refresh()
 		})}
 		editorBox.Refresh()
-	})
+		if toolbar.editBtn != nil {
+			toolbar.editBtn.Enable()
+			toolbar.deleteBtn.Enable()
+		}
+	}
+
+	clearSelection := func() {
+		current = nil
+		editorBox.Objects = []fyne.CanvasObject{emptyEditor(v)}
+		editorBox.Refresh()
+		if toolbar.editBtn != nil {
+			toolbar.editBtn.Disable()
+			toolbar.deleteBtn.Disable()
+		}
+	}
+
+	rebuildTree := func() {
+		treeBox.Objects = []fyne.CanvasObject{prefixTree(sess, func(key []byte) {
+			val, err := sess.Store.Get(key)
+			if err != nil {
+				return
+			}
+			loadEditorFor(kvstore.Entry{Key: key, Value: val})
+		})}
+		treeBox.Refresh()
+	}
+
+	refreshAll := func() {
+		_ = sess.Refresh()
+		table.Refresh()
+		rebuildTree()
+		clearSelection()
+	}
+
+	table = keyTable(sess, filter, loadEditorFor)
+	rebuildTree()
 
 	filterUI := filterRow(filter, func() {
 		table.Refresh()
 	})
 
-	left := prefixTree(sess, func(key []byte) {
-		val, err := sess.Store.Get(key)
-		if err != nil {
-			return
-		}
-		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, w, kvstore.Entry{Key: key, Value: val}, func() {
-			table.Refresh()
-		})}
-		editorBox.Refresh()
-	})
+	actions := ToolbarActions{
+		OnOpen:  onOpen,
+		OnClose: onClose,
+		OnAdd: func() {
+			showAddKey(w, sess, refreshAll)
+		},
+		OnEdit: func() {
+			if current == nil {
+				return
+			}
+			showEditKey(w, sess, *current, refreshAll)
+		},
+		OnDelete: func() {
+			if current == nil {
+				return
+			}
+			showDeleteKey(w, sess, current.Key, refreshAll)
+		},
+		OnRefresh: refreshAll,
+		// OnSettings wired in Step 14
+	}
+	toolbar = buildToolbar(actions)
+	toolbar.editBtn.Disable()
+	toolbar.deleteBtn.Disable()
+
+	tabs := tabStrip(v, sess)
 
 	tableWithFilter := container.NewBorder(container.NewPadded(filterUI), nil, nil, nil, table)
 	center := container.NewVSplit(tableWithFilter, editorBox)
 	center.Offset = 0.62
 
-	split := container.NewHSplit(left, center)
+	split := container.NewHSplit(treeBox, center)
 	split.Offset = 0.22
 
 	status := mainStatusBar(v, sess, onToggle)
@@ -59,7 +112,7 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	sep := canvas.NewRectangle(themeColor(v, fynetheme.ColorNameSeparator))
 	sep.SetMinSize(fyne.NewSize(0, 1))
 
-	top := container.NewVBox(accent, bar, tabs, sep)
+	top := container.NewVBox(accent, toolbar.bar, tabs, sep)
 	return container.NewBorder(top, status, nil, nil, split)
 }
 
