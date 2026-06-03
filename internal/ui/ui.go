@@ -21,6 +21,7 @@ type appHandlers struct {
 	deleteKey   func()
 	refresh     func()
 	focusFilter func()
+	cycleTab    func()
 }
 
 func Run() {
@@ -46,7 +47,8 @@ func Run() {
 	}
 	w.Resize(fyne.NewSize(winW, winH))
 
-	var session *app.Session
+	var sessions []*app.Session
+	activeIdx := 0
 	var render func()
 	handlers := &appHandlers{}
 
@@ -71,22 +73,54 @@ func Run() {
 			dialog.ShowError(err, w)
 			return
 		}
-		if session != nil {
-			_ = session.Close()
+		if !req.NewTab && len(sessions) > 0 {
+			_ = sessions[activeIdx].Close()
+			sessions[activeIdx] = sess
+		} else {
+			sessions = append(sessions, sess)
+			activeIdx = len(sessions) - 1
 		}
-		session = sess
 		cfg.AddRecent(req.Path, string(req.Engine))
 		persist()
 		render()
 	}
 
-	closeSess := func() {
-		if session != nil {
-			_ = session.Close()
-			session = nil
+	closeAt := func(i int) {
+		if i < 0 || i >= len(sessions) {
+			return
+		}
+		_ = sessions[i].Close()
+		sessions = append(sessions[:i], sessions[i+1:]...)
+		if activeIdx >= len(sessions) {
+			activeIdx = len(sessions) - 1
+		}
+		if activeIdx < 0 {
+			activeIdx = 0
 		}
 		*handlers = appHandlers{}
 		render()
+	}
+
+	closeActive := func() {
+		if len(sessions) > 0 {
+			closeAt(activeIdx)
+		}
+	}
+
+	selectTab := func(i int) {
+		if i < 0 || i >= len(sessions) || i == activeIdx {
+			return
+		}
+		activeIdx = i
+		*handlers = appHandlers{}
+		render()
+	}
+
+	cycleTab := func() {
+		if len(sessions) <= 1 {
+			return
+		}
+		selectTab((activeIdx + 1) % len(sessions))
 	}
 
 	toggleTheme := func() {
@@ -101,21 +135,36 @@ func Run() {
 		showOpenDatabase(w, openReq)
 	}
 
+	addTab := func() {
+		showOpenDatabase(w, func(req OpenRequest) {
+			req.NewTab = true
+			openReq(req)
+		})
+	}
+
 	openSettings := func() {
 		showSettings(w, themePref, SettingsHandlers{OnTheme: setTheme})
 	}
 
 	render = func() {
-		if session == nil {
+		if len(sessions) == 0 {
 			*handlers = appHandlers{}
 			w.SetContent(welcomePage(a, w, &variant, toggleTheme, openReq, recentsFromConfig(cfg.Recents)))
-		} else {
-			w.SetContent(mainPage(a, w, session, &variant, openFromMain, closeSess, toggleTheme, openSettings, handlers))
+			return
 		}
+		bar := TabBar{
+			Sessions: sessions,
+			Active:   activeIdx,
+			OnSelect: selectTab,
+			OnClose:  closeAt,
+			OnAdd:    addTab,
+		}
+		w.SetContent(mainPage(a, w, bar, &variant, openFromMain, closeActive, toggleTheme, openSettings, handlers))
+		handlers.cycleTab = cycleTab
 	}
 	render()
 
-	w.SetMainMenu(mainMenu(w, openFromMain, closeSess, toggleTheme, openSettings))
+	w.SetMainMenu(mainMenu(w, openFromMain, closeActive, toggleTheme, openSettings))
 	registerShortcuts(w, handlers)
 
 	w.SetCloseIntercept(func() {
@@ -123,8 +172,8 @@ func Run() {
 		cfg.WindowWidth = size.Width
 		cfg.WindowHeight = size.Height
 		persist()
-		if session != nil {
-			_ = session.Close()
+		for _, s := range sessions {
+			_ = s.Close()
 		}
 		w.Close()
 	})

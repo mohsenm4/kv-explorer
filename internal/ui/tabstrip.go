@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"image/color"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -12,26 +14,60 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-// tabStrip renders the row of database tabs. For now there's only one
-// session, so just a single active tab plus a "+" affordance.
-func tabStrip(v fyne.ThemeVariant, sess *app.Session) fyne.CanvasObject {
+// TabBar carries every session plus the index of the active one and the
+// callbacks that the strip needs to fire.
+type TabBar struct {
+	Sessions []*app.Session
+	Active   int
+	OnSelect func(int)
+	OnClose  func(int)
+	OnAdd    func()
+}
+
+// tabStrip renders the row of database tabs.
+func tabStrip(v fyne.ThemeVariant, bar TabBar) fyne.CanvasObject {
+	row := container.NewHBox()
+	for i, s := range bar.Sessions {
+		idx := i
+		row.Add(buildTab(v, s, i == bar.Active,
+			func() { bar.OnSelect(idx) },
+			func() { bar.OnClose(idx) },
+		))
+	}
+
+	plus := widget.NewButtonWithIcon("", fynetheme.ContentAddIcon(), bar.OnAdd)
+	plus.Importance = widget.LowImportance
+	row.Add(plus)
+	row.Add(layout.NewSpacer())
+	return row
+}
+
+func buildTab(v fyne.ThemeVariant, sess *app.Session, active bool, onSelect, onClose func()) fyne.CanvasObject {
 	accent := apptheme.DBAccent(string(sess.Engine), v)
 	fg := themeColor(v, fynetheme.ColorNameForeground)
+	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 
 	dot := engineDot(string(sess.Engine), v, 14)
 
-	name := canvas.NewText(engineDisplayName(sess.Engine), fg)
+	nameColor := fg
+	if !active {
+		nameColor = muted
+	}
+	name := canvas.NewText(engineDisplayName(sess.Engine), nameColor)
 	name.TextSize = 14
 
-	underline := canvas.NewRectangle(accent)
+	closeBtn := widget.NewButtonWithIcon("", fynetheme.CancelIcon(), onClose)
+	closeBtn.Importance = widget.LowImportance
+
+	head := container.NewHBox(dot, name, closeBtn)
+
+	var underline *canvas.Rectangle
+	if active {
+		underline = canvas.NewRectangle(accent)
+	} else {
+		underline = canvas.NewRectangle(color.Transparent)
+	}
 	underline.SetMinSize(fyne.NewSize(0, 2))
 
-	head := container.NewHBox(dot, name)
-	tab := container.NewVBox(head, underline)
-
-	plus := widget.NewButtonWithIcon("", fynetheme.ContentAddIcon(), nil)
-	plus.Importance = widget.LowImportance
-	plus.Disable() // multi-tab is Step 17
-
-	return container.NewHBox(container.NewPadded(tab), plus, layout.NewSpacer())
+	return newTappable(container.NewVBox(container.NewPadded(head), underline), onSelect)
 }

@@ -7,13 +7,13 @@ import (
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/mohsenm4/kv-explorer/internal/app"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeVariant, onOpen, onClose, onToggle, onSettings func(), handlers *appHandlers) fyne.CanvasObject {
+func mainPage(a fyne.App, w fyne.Window, bar TabBar, variant *fyne.ThemeVariant, onOpen, onClose, onToggle, onSettings func(), handlers *appHandlers) fyne.CanvasObject {
 	v := *variant
+	sess := bar.Sessions[bar.Active]
 
 	accent := canvas.NewRectangle(apptheme.DBAccent(string(sess.Engine), v))
 	accent.SetMinSize(fyne.NewSize(0, 3))
@@ -104,7 +104,7 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	handlers.refresh = refreshAll
 	handlers.focusFilter = func() { w.Canvas().Focus(filterEntry) }
 
-	tabs := tabStrip(v, sess)
+	tabs := tabStrip(v, bar)
 
 	tableWithFilter := container.NewBorder(container.NewPadded(filterUI), nil, nil, nil, table)
 	center := container.NewVSplit(tableWithFilter, editorBox)

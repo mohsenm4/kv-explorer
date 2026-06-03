@@ -47,6 +47,11 @@ func registerShortcuts(w fyne.Window, h *appHandlers) {
 				h.deleteKey()
 			}
 		}},
+		{shortcut(fyne.KeyTab, fyne.KeyModifierShortcutDefault), func() {
+			if h.cycleTab != nil {
+				h.cycleTab()
+			}
+		}},
 	}
 
 	for _, b := range bindings {
