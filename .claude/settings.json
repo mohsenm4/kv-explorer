@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "plan",
+    "allow": [
+      "Bash(go build*)",
+      "Bash(go run*)",
+      "Bash(go test*)",
+      "Bash(go vet*)",
+      "Bash(go mod*)",
+      "Bash(go fmt*)",
+      "Bash(gofmt*)",
+      "Bash(go install*)",
+      "Bash(go get*)",
+      "Bash(go work*)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(git checkout*)",
+      "Bash(ls*)",
+      "Bash(pwd)",
+      "Read",
+      "Edit(./**)",
+      "Write(./**)",
+      "Grep",
+      "Glob"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(rm -rf ~*)",
+      "Bash(rm -rf ../**)",
+      "Bash(git push --force*)",
+      "Bash(git reset --hard*)",
+      "Edit(.git/**)",
+      "Write(.git/**)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(rm*)"
+    ]
+  },
+  "env": {
+    "CGO_ENABLED": "1",
+    "GO111MODULE": "on"
+  }
+}

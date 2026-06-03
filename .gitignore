@@ -1,0 +1,40 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+kvstudio
+/bin/
+/build/
+/dist/
+
+# Test artifacts
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# Go
+/vendor/
+
+# Database test data
+testdata/*.db/
+testdata/*.ldb/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Claude personal overrides (kept local, not committed)
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Logs
+*.log
+logs/
