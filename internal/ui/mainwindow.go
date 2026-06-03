@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
@@ -20,7 +21,10 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	bar := buildToolbar(onOpen, onClose)
 	tabs := tabStrip(v, sess)
 
-	left := placeholderPane("Tree (Step 8)")
+	left := prefixTree(sess, func(key []byte) {
+		// TODO Step 9: scroll the table to this key + load into editor
+		_ = key
+	})
 	table := keyTable(sess, func(e tableEntry) {
 		// TODO Step 9: surface the value in the editor
 		_ = e
@@ -32,7 +36,10 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 
 	status := mainStatusBar(v, sess, onToggle)
 
-	top := container.NewVBox(accent, bar, tabs)
+	sep := canvas.NewRectangle(themeColor(v, fynetheme.ColorNameSeparator))
+	sep.SetMinSize(fyne.NewSize(0, 1))
+
+	top := container.NewVBox(accent, bar, tabs, sep)
 	return container.NewBorder(top, status, nil, nil, split)
 }
 
