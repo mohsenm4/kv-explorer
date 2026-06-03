@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/layout"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -54,14 +55,17 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 	newTab.SetChecked(true)
 	readOnly := widget.NewCheck("Read-only", nil)
 
-	content := container.NewVBox(
+	body := container.NewVBox(
 		sectionLabel("Engine"),
 		engine,
+		gap(8),
 		sectionLabel("Path"),
 		pathRow,
+		gap(8),
 		newTab,
 		readOnly,
 	)
+	content := container.New(layout.NewCustomPaddedLayout(4, 4, 8, 8), body)
 
 	d := dialog.NewCustomConfirm("Open Database", "Open", "Cancel", content, func(confirmed bool) {
 		if !confirmed {
@@ -81,7 +85,7 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 			ReadOnly: readOnly.Checked,
 		})
 	}, parent)
-	d.Resize(fyne.NewSize(480, 360))
+	d.Resize(fyne.NewSize(520, 380))
 	d.SetConfirmImportance(widget.HighImportance)
 	d.Show()
 }

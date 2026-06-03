@@ -7,9 +7,13 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
 func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
@@ -33,7 +37,18 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 
 	open := widget.NewButtonWithIcon("Open Database…", fynetheme.FolderOpenIcon(), func() {
 		showOpenDatabase(w, func(req OpenRequest) {
-			fmt.Printf("open requested: %+v\n", req) // wired up in Step 5
+			store, err := app.OpenStore(req.Engine, req.Path, kvstore.OpenOptions{ReadOnly: req.ReadOnly})
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
+			defer store.Close()
+			count, err := app.CountKeys(store)
+			if err != nil {
+				dialog.ShowError(err, w)
+				return
+			}
+			dialog.ShowInformation("Opened", fmt.Sprintf("%s\n%d keys", req.Path, count), w)
 		})
 	})
 	open.Importance = widget.HighImportance

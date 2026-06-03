@@ -13,6 +13,10 @@ type Entry struct {
 	Value []byte
 }
 
+type OpenOptions struct {
+	ReadOnly bool
+}
+
 type Store interface {
 	Get(key []byte) ([]byte, error)
 	Set(key, value []byte) error
