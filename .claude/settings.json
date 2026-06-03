@@ -45,5 +45,18 @@
   "env": {
     "CGO_ENABLED": "1",
     "GO111MODULE": "on"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"$CLAUDE_FILE_PATH\"; if [ -n \"$f\" ] && [ \"${f##*.}\" = \"go\" ] && [ -f \"$f\" ]; then gofmt -w \"$f\"; fi"
+          }
+        ]
+      }
+    ]
   }
 }
