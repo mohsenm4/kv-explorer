@@ -11,6 +11,24 @@ type Theme struct{}
 
 func New() fyne.Theme { return Theme{} }
 
+// ForcedVariant wraps a base theme and forces every color lookup to use the
+// given variant, ignoring whatever variant Fyne would otherwise pass in.
+func ForcedVariant(base fyne.Theme, v fyne.ThemeVariant) fyne.Theme {
+	return &forcedVariantTheme{base: base, variant: v}
+}
+
+type forcedVariantTheme struct {
+	base    fyne.Theme
+	variant fyne.ThemeVariant
+}
+
+func (t *forcedVariantTheme) Color(n fyne.ThemeColorName, _ fyne.ThemeVariant) color.Color {
+	return t.base.Color(n, t.variant)
+}
+func (t *forcedVariantTheme) Font(s fyne.TextStyle) fyne.Resource  { return t.base.Font(s) }
+func (t *forcedVariantTheme) Icon(n fyne.ThemeIconName) fyne.Resource { return t.base.Icon(n) }
+func (t *forcedVariantTheme) Size(n fyne.ThemeSizeName) float32     { return t.base.Size(n) }
+
 func (Theme) Color(name fyne.ThemeColorName, variant fyne.ThemeVariant) color.Color {
 	if variant == fynetheme.VariantDark {
 		if c, ok := darkPalette[name]; ok {
