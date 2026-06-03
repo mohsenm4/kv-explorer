@@ -8,17 +8,16 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// keyTable renders the central table of key / value preview / size. Cells
-// pull from sess.Entries() filtered by the shared FilterState on every
-// render, so calling sess.Refresh()/table.Refresh() picks up edits and
-// filter changes alike.
-// onSelect fires when the user picks a row.
+// keyTable renders the central table of key / value preview / size. It
+// holds only key metadata in memory and fetches values on demand from the
+// store, so a million-key database doesn't have to fit in RAM.
+// onSelect fires with the row's key + freshly-fetched value.
 func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entry)) *widget.Table {
 	headers := []string{"Key", "Value preview", "Size"}
 
-	read := func() []kvstore.Entry {
-		entries, _ := sess.Entries()
-		return applyFilter(entries, *filter)
+	read := func() []app.KeyMeta {
+		keys, _ := sess.Keys()
+		return applyFilter(keys, *filter)
 	}
 
 	table := widget.NewTableWithHeaders(
@@ -33,20 +32,24 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 			l := c.(*widget.Label)
 			l.TextStyle = fyne.TextStyle{Monospace: true}
 			l.Alignment = fyne.TextAlignLeading
-			entries := read()
-			if id.Row < 0 || id.Row >= len(entries) {
+			keys := read()
+			if id.Row < 0 || id.Row >= len(keys) {
 				l.SetText("")
 				return
 			}
-			e := entries[id.Row]
+			meta := keys[id.Row]
 			switch id.Col {
 			case 0:
-				l.SetText(string(e.Key))
+				l.SetText(meta.Key)
 			case 1:
-				l.SetText(previewValue(e.Value))
+				if v, err := sess.Value([]byte(meta.Key)); err == nil {
+					l.SetText(previewValue(v))
+				} else {
+					l.SetText("")
+				}
 			case 2:
 				l.Alignment = fyne.TextAlignTrailing
-				l.SetText(humanSize(int64(len(e.Value))))
+				l.SetText(humanSize(int64(meta.Size)))
 			}
 		},
 	)
@@ -73,10 +76,19 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 	table.SetColumnWidth(2, 80)
 
 	table.OnSelected = func(id widget.TableCellID) {
-		entries := read()
-		if onSelect != nil && id.Row >= 0 && id.Row < len(entries) {
-			onSelect(entries[id.Row])
+		if onSelect == nil {
+			return
 		}
+		keys := read()
+		if id.Row < 0 || id.Row >= len(keys) {
+			return
+		}
+		k := []byte(keys[id.Row].Key)
+		v, err := sess.Value(k)
+		if err != nil {
+			return
+		}
+		onSelect(kvstore.Entry{Key: k, Value: v})
 	}
 
 	return table

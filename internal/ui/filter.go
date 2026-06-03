@@ -9,7 +9,7 @@ import (
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"github.com/mohsenm4/kv-explorer/internal/kvstore"
+	"github.com/mohsenm4/kv-explorer/internal/app"
 )
 
 // FilterState carries the current filter query. Mode is a placeholder for
@@ -51,16 +51,16 @@ func filterRow(state *FilterState, onChange func()) fyne.CanvasObject {
 	return container.NewBorder(nil, nil, nil, filterBtn, search)
 }
 
-// applyFilter returns the subset of entries that match the filter state.
-func applyFilter(entries []kvstore.Entry, state FilterState) []kvstore.Entry {
+// applyFilter returns the subset of keys that match the filter state.
+func applyFilter(keys []app.KeyMeta, state FilterState) []app.KeyMeta {
 	q := state.Query
 	if q == "" {
-		return entries
+		return keys
 	}
-	out := entries[:0:0]
-	for _, e := range entries {
-		if strings.Contains(string(e.Key), q) {
-			out = append(out, e)
+	out := keys[:0:0]
+	for _, k := range keys {
+		if strings.Contains(k.Key, q) {
+			out = append(out, k)
 		}
 	}
 	return out

@@ -7,6 +7,13 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
+// KeyMeta is the lightweight per-row info the UI keeps in memory: just the
+// key and its value size. Actual values are fetched on demand via Value().
+type KeyMeta struct {
+	Key  string
+	Size int
+}
+
 // Session represents one open database. Multiple sessions can coexist
 // (one per UI tab once Step 17 lands).
 type Session struct {
@@ -16,7 +23,7 @@ type Session struct {
 	KeyCount  int
 	SizeBytes int64
 
-	entries []kvstore.Entry
+	keys []KeyMeta
 }
 
 func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions) (*Session, error) {
@@ -25,7 +32,7 @@ func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions)
 		return nil, err
 	}
 	s := &Session{Engine: kind, Path: path, Store: store}
-	if _, err := s.reloadEntries(); err != nil {
+	if _, err := s.reloadKeys(); err != nil {
 		_ = store.Close()
 		return nil, err
 	}
@@ -35,32 +42,40 @@ func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions)
 	return s, nil
 }
 
-// Entries returns all key/value pairs in the store, cached after the first
-// call. Use Refresh to invalidate the cache after a write.
-func (s *Session) Entries() ([]kvstore.Entry, error) {
-	if s.entries != nil {
-		return s.entries, nil
+// Keys returns the cached list of (key, size) pairs sorted by key. The
+// cache is populated on session open and invalidated by Refresh.
+func (s *Session) Keys() ([]KeyMeta, error) {
+	if s.keys != nil {
+		return s.keys, nil
 	}
-	return s.reloadEntries()
+	return s.reloadKeys()
 }
 
-// Refresh re-iterates the store and updates the cached entries and counts.
+// Value fetches the value bytes for a key directly from the store. Values
+// are never cached at the session level — callers can wrap their own
+// cache if hot lookups warrant it.
+func (s *Session) Value(key []byte) ([]byte, error) {
+	return s.Store.Get(key)
+}
+
+// Refresh re-iterates the store, refreshing the key cache and counts.
 func (s *Session) Refresh() error {
-	_, err := s.reloadEntries()
+	_, err := s.reloadKeys()
 	return err
 }
 
-func (s *Session) reloadEntries() ([]kvstore.Entry, error) {
+func (s *Session) reloadKeys() ([]KeyMeta, error) {
 	it, err := s.Store.Iter(nil)
 	if err != nil {
 		return nil, err
 	}
 	defer it.Close()
-	var out []kvstore.Entry
+	var out []KeyMeta
 	for it.Next() {
-		out = append(out, it.Entry())
+		e := it.Entry()
+		out = append(out, KeyMeta{Key: string(e.Key), Size: len(e.Value)})
 	}
-	s.entries = out
+	s.keys = out
 	s.KeyCount = len(out)
 	return out, nil
 }
