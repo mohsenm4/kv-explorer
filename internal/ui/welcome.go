@@ -1,22 +1,17 @@
 package ui
 
 import (
-	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/mohsenm4/kv-explorer/internal/app"
-	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
+func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func(), onOpen func(OpenRequest)) fyne.CanvasObject {
 	th := a.Settings().Theme()
 	v := *variant
 
@@ -36,25 +31,12 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 	tagline.Alignment = fyne.TextAlignCenter
 
 	open := widget.NewButtonWithIcon("Open Database…", fynetheme.FolderOpenIcon(), func() {
-		showOpenDatabase(w, func(req OpenRequest) {
-			store, err := app.OpenStore(req.Engine, req.Path, kvstore.OpenOptions{ReadOnly: req.ReadOnly})
-			if err != nil {
-				dialog.ShowError(err, w)
-				return
-			}
-			defer store.Close()
-			count, err := app.CountKeys(store)
-			if err != nil {
-				dialog.ShowError(err, w)
-				return
-			}
-			dialog.ShowInformation("Opened", fmt.Sprintf("%s\n%d keys", req.Path, count), w)
-		})
+		showOpenDatabase(w, onOpen)
 	})
 	open.Importance = widget.HighImportance
 
 	openRecent := widget.NewButtonWithIcon("Open Recent", fynetheme.MenuDropDownIcon(), func() {
-		// TODO Step 4: recent dropdown menu
+		// TODO Step 16: recent dropdown menu (needs persistence)
 	})
 	openRecent.IconPlacement = widget.ButtonIconTrailingText
 
@@ -74,7 +56,7 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 	heroSized := container.NewGridWrap(fyne.NewSize(520, heroStack.MinSize().Height), heroStack)
 	center := container.NewCenter(heroSized)
 
-	return container.NewBorder(nil, statusBar(v, "No database open", onToggle), nil, nil, center)
+	return container.NewBorder(nil, welcomeStatusBar(v, onToggle), nil, nil, center)
 }
 
 func heroIcon(primary color.Color) fyne.CanvasObject {
