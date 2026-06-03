@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
+	"github.com/mohsenm4/kv-explorer/internal/kvstore/badger"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore/pebble"
 )
 
@@ -14,7 +15,7 @@ func OpenStore(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions) (
 	case kvstore.EnginePebble:
 		return pebble.Open(path, opts)
 	case kvstore.EngineBadger:
-		return nil, fmt.Errorf("engine %q not implemented yet", kind)
+		return badger.Open(path, opts)
 	case kvstore.EngineLevelDB:
 		return nil, fmt.Errorf("engine %q not implemented yet", kind)
 	default:
