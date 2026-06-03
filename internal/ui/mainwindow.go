@@ -26,7 +26,7 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 
 	var table *widget.Table
 	table = keyTable(sess, filter, func(e kvstore.Entry) {
-		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, e, func() {
+		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, w, e, func() {
 			table.Refresh()
 		})}
 		editorBox.Refresh()
@@ -41,7 +41,7 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 		if err != nil {
 			return
 		}
-		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, kvstore.Entry{Key: key, Value: val}, func() {
+		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, w, kvstore.Entry{Key: key, Value: val}, func() {
 			table.Refresh()
 		})}
 		editorBox.Refresh()

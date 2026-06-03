@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 
@@ -95,7 +97,13 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 }
 
 // previewValue trims a value down to a single-line preview for the table.
+// Non-text content is summarised by MIME type + size so the row doesn't
+// fill with garbled bytes.
 func previewValue(v []byte) string {
+	kind, mime := DetectContent(v)
+	if kind == KindImage || kind == KindBinary {
+		return fmt.Sprintf("[%s · %s]", mime, humanSize(int64(len(v))))
+	}
 	const max = 120
 	s := string(v)
 	for i := 0; i < len(s); i++ {

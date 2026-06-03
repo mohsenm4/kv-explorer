@@ -1,11 +1,17 @@
 // seed populates a Pebble store with synthetic data shaped like the
-// wireframes in docs/design/spec.md (users/, sessions/, logs/, cache/).
+// wireframes in docs/design/spec.md (users/, sessions/, logs/, cache/),
+// plus a few binary samples for the editor's image/hex modes.
 // Usage: go run ./cmd/seed <pebble-path>
 package main
 
 import (
+	"bytes"
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/color"
+	"image/png"
 	"log"
 	"os"
 
@@ -71,5 +77,32 @@ func main() {
 	put("meta/schema_version", "3")
 	put("meta/last_compaction", "2026-06-02T22:00:00Z")
 
-	fmt.Printf("seeded %s (187 keys: 120 users, 30 sessions, 30 logs, 4 cache, 3 meta)\n", path)
+	// Binary samples for the editor's image / hex modes (Step 10c).
+	put("media/red.png", string(makePNG(96, 96, color.RGBA{R: 220, G: 50, B: 50, A: 255})))
+	put("media/blue.png", string(makePNG(96, 96, color.RGBA{R: 50, G: 80, B: 220, A: 255})))
+	put("media/wide.png", string(makePNG(192, 64, color.RGBA{R: 50, G: 180, B: 80, A: 255})))
+
+	randBytes := make([]byte, 256)
+	_, _ = rand.Read(randBytes)
+	put("media/random.bin", string(randBytes))
+
+	// Fake MP3 header so DetectContent sees audio/mpeg.
+	mp3 := append([]byte{0xff, 0xfb, 0x90, 0x00}, randBytes[:200]...)
+	put("media/song.mp3", string(mp3))
+
+	fmt.Printf("seeded %s (192 keys: 120 users, 30 sessions, 30 logs, 4 cache, 3 meta, 5 media)\n", path)
+}
+
+func makePNG(w, h int, c color.RGBA) []byte {
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			img.Set(x, y, c)
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		log.Fatalf("encode png: %v", err)
+	}
+	return buf.Bytes()
 }
