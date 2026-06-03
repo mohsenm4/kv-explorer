@@ -31,7 +31,7 @@ The full structure and conventions are documented in [CLAUDE.md](./CLAUDE.md).
 ## Design
 
 UI design lives in Figma:
-<https://www.figma.com/design/QAe3rjM2Mrb5dCUZgDr4Dm/Untitled>
+<https://www.figma.com/design/QAe3rjM2Mrb5dCUZgDr4Dm/Untitled?node-id=1-1997&p=f>
 
 Engineering reference (tokens, Fyne mapping, accessibility rules) is in
 [`docs/design/`](./docs/design/).

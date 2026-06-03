@@ -1,7 +1,7 @@
 # KV-Explorer — Design
 
 The visual source of truth for KV-Explorer lives in **Figma**:
-<https://www.figma.com/design/QAe3rjM2Mrb5dCUZgDr4Dm/Untitled>
+<https://www.figma.com/design/QAe3rjM2Mrb5dCUZgDr4Dm/Untitled?node-id=1-1997&p=f>
 
 This folder holds the engineering-side reference that complements it.
 
