@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"fmt"
+	"time"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
@@ -63,12 +66,21 @@ func welcome(a fyne.App, variant *fyne.ThemeVariant, onToggle func()) fyne.Canva
 	})
 	open.Importance = widget.HighImportance
 
+	recents := fakeRecents()
 	hero := container.NewVBox(
 		container.NewCenter(iconBox),
 		title,
 		tagline,
 		container.NewCenter(open),
 	)
+	if len(recents) > 0 {
+		hero.Add(widget.NewSeparator())
+		hero.Add(recentSection(v, recents, func(r recentEntry) {
+			fmt.Println("recent clicked:", r.path) // wired up in Step 5
+		}))
+	}
+
+	heroBox := container.NewGridWrap(fyne.NewSize(480, hero.MinSize().Height), hero)
 
 	toggleLabel := "Dark"
 	if v == fynetheme.VariantDark {
@@ -78,5 +90,63 @@ func welcome(a fyne.App, variant *fyne.ThemeVariant, onToggle func()) fyne.Canva
 	toggle.Importance = widget.LowImportance
 
 	topRow := container.NewHBox(layout.NewSpacer(), toggle)
-	return container.NewBorder(topRow, nil, nil, nil, container.NewCenter(hero))
+	return container.NewBorder(topRow, nil, nil, nil, container.NewCenter(heroBox))
+}
+
+type recentEntry struct {
+	path   string
+	engine string // matches kvstore.EngineKind values
+	when   time.Time
+}
+
+func fakeRecents() []recentEntry {
+	now := time.Now()
+	return []recentEntry{
+		{"~/data/users.pebble", "pebble", now.Add(-2 * time.Hour)},
+		{"~/work/cache.badger", "badger", now.Add(-26 * time.Hour)},
+		{"/tmp/scratch.ldb", "leveldb", now.Add(-3 * 24 * time.Hour)},
+	}
+}
+
+func recentSection(v fyne.ThemeVariant, entries []recentEntry, onPick func(recentEntry)) fyne.CanvasObject {
+	heading := widget.NewLabelWithStyle("Recent", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+
+	rows := container.NewVBox()
+	for _, e := range entries {
+		rows.Add(recentRow(v, e, onPick))
+	}
+	return container.NewVBox(heading, rows)
+}
+
+func recentRow(v fyne.ThemeVariant, e recentEntry, onPick func(recentEntry)) fyne.CanvasObject {
+	dot := canvas.NewCircle(apptheme.DBAccent(e.engine, v))
+	dot.Resize(fyne.NewSize(10, 10))
+	dotBox := container.NewGridWrap(fyne.NewSize(10, 10), dot)
+
+	pathBtn := widget.NewButton(e.path, func() { onPick(e) })
+	pathBtn.Importance = widget.LowImportance
+	pathBtn.Alignment = widget.ButtonAlignLeading
+
+	when := widget.NewLabel(relTime(e.when))
+	when.Importance = widget.LowImportance
+
+	return container.NewBorder(nil, nil, dotBox, when, pathBtn)
+}
+
+func relTime(t time.Time) string {
+	d := time.Since(t)
+	switch {
+	case d < time.Minute:
+		return "just now"
+	case d < time.Hour:
+		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+	case d < 24*time.Hour:
+		return fmt.Sprintf("%dh ago", int(d.Hours()))
+	case d < 48*time.Hour:
+		return "yesterday"
+	case d < 7*24*time.Hour:
+		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+	default:
+		return t.Format("Jan 2")
+	}
 }

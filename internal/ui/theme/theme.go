@@ -72,6 +72,31 @@ var sizes = map[fyne.ThemeSizeName]float32{
 func rgb(r, g, b uint8) color.NRGBA     { return color.NRGBA{R: r, G: g, B: b, A: 0xFF} }
 func rgba(r, g, b, a uint8) color.NRGBA { return color.NRGBA{R: r, G: g, B: b, A: a} }
 
+// DBAccent returns the accent color for a database engine, per spec §2.3.
+// The `engine` string should match the kvstore.EngineKind values
+// ("pebble", "badger", "leveldb"). Unknown engines fall back to placeholder.
+func DBAccent(engine string, v fyne.ThemeVariant) color.Color {
+	dark := v == fynetheme.VariantDark
+	switch engine {
+	case "pebble":
+		if dark {
+			return rgb(0x38, 0xBD, 0xF8)
+		}
+		return rgb(0x0E, 0xA5, 0xE9)
+	case "badger":
+		if dark {
+			return rgb(0xFB, 0xBF, 0x24)
+		}
+		return rgb(0xF5, 0x9E, 0x0B)
+	case "leveldb":
+		if dark {
+			return rgb(0x34, 0xD3, 0x99)
+		}
+		return rgb(0x10, 0xB9, 0x81)
+	}
+	return rgb(0x94, 0xA3, 0xB8)
+}
+
 var lightPalette = map[fyne.ThemeColorName]color.Color{
 	fynetheme.ColorNameBackground:          rgb(0xFA, 0xFA, 0xFA),
 	fynetheme.ColorNameForeground:          rgb(0x0F, 0x17, 0x2A),
