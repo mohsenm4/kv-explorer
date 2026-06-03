@@ -17,7 +17,7 @@ below it — never the other way around.
                    │ calls
 ┌──────────────────▼──────────────────────┐
 │  Logic layer  (internal/logic)           │
-│  filter, search, batch ops, validation   │
+│  engine-agnostic operations              │
 └──────────────────┬──────────────────────┘
                    │ uses
 ┌──────────────────▼──────────────────────┐
@@ -91,6 +91,66 @@ When a user sets a key from the UI:
 
 The UI never imports any of the adapter packages directly. It only sees the
 `KVStore` interface returned from a factory in `internal/databases`.
+
+## Dependency Rules
+
+The layered diagram above is enforced by a strict import policy. Every
+package may import only from the rows below it.
+
+| Package                  | May import                                       | Forbidden                          |
+| ------------------------ | ------------------------------------------------ | ---------------------------------- |
+| `cmd/kvexplorer`         | anything in `internal/`                          | —                                  |
+| `internal/ui/mainwindow` | other UI, logic, databases (interface), config   | adapter packages directly          |
+| `internal/ui/components` | `internal/ui/theme`                              | logic, databases, config           |
+| `internal/ui/theme`      | Fyne `theme` only                                | logic, databases, config, other UI |
+| `internal/logic`         | databases (interface), utils                     | UI, adapter packages directly      |
+| `internal/databases`     | stdlib only                                      | UI, logic, adapters                |
+| adapter packages         | own DB lib, `internal/databases` (root)          | UI, logic, sibling adapters        |
+| `internal/config`        | stdlib                                           | UI, logic, databases               |
+| `internal/utils`         | stdlib                                           | anything in this project           |
+
+**The most important rule**: nothing above the dotted line below knows
+about a specific database engine. The UI sees only `KVStore`, and the
+factory in `internal/databases` decides which adapter to construct.
+
+```text
+                  cmd/kvexplorer
+                        │
+            ┌───────────┴───────────┐
+            │                       │
+       internal/ui              internal/config
+            │
+       internal/logic
+            │
+- - - - - - │ - - - - - - - - - - - - - - - - - -
+            │   ↑ everything above is engine-agnostic
+            ▼   ↓ everything below is engine-specific
+   internal/databases  (KVStore interface)
+            │
+   ┌────────┼────────┐
+   ▼        ▼        ▼
+ pebble  badger   leveldb
+```
+
+## Common Mistakes to Avoid
+
+These patterns broke the previous KV-Toolbox codebase. They're explicitly
+forbidden here:
+
+- **UI directly importing an adapter package** (e.g.
+  `internal/ui/mainwindow` importing `internal/databases/pebble`).
+  Use the `KVStore` interface — always.
+- **Logic layer creating Fyne widgets.** The logic layer must be testable
+  without a Fyne app. If a logic function needs to "show a dialog", it
+  returns a result and the UI decides what to do.
+- **Adapters reading from config.** They take their options as a struct
+  argument. The logic or UI layer reads config and passes options down.
+- **Two widgets sharing mutable state without a controller.** Pass a
+  controller struct (or use Fyne data bindings) — never reach into a
+  sibling widget.
+- **Hardcoded color, font, or size in a widget.** Read from `theme`.
+- **Cross-adapter imports** (e.g. `badger` importing `pebble`).
+  Adapters are siblings, not a chain.
 
 ## Extension Points
 

@@ -3,38 +3,106 @@
 A desktop GUI tool for managing and inspecting key-value databases.
 This project is a complete, modern rewrite of "KV-Toolbox" with AI assistance.
 
+> **Process**: features come first, code shape follows. When the UI needs a
+> new capability, we add the smallest backend piece that supports it. We do
+> not prescribe folder layout up-front; we let it grow from what the
+> features actually need.
+
 ## Supported Databases
 
 - **PebbleDB** — Low-level LSM-Tree engine (derived from RocksDB)
 - **BadgerDB** — Popular Go-native KV store
 - **LevelDB** — Classic, simple, lightweight
 
-## Architecture
+## What the User Can Do (UI Features)
 
-The project follows the standard Go layout with `cmd/` and `internal/` separation:
+The desktop app's user-facing capabilities. Backend exists to serve these —
+nothing else.
 
-```text
-kv-explorer/
-├── cmd/kvexplorer/         # Application entry point (main package)
-├── internal/
-│   ├── databases/          # Per-database adapters
-│   │   ├── pebble/         # PebbleDB implementation
-│   │   ├── badger/         # BadgerDB implementation
-│   │   └── leveldb/        # LevelDB implementation
-│   ├── ui/                 # UI layer (Fyne)
-│   │   ├── mainwindow/     # Main window
-│   │   ├── components/     # Reusable widgets
-│   │   └── theme/          # Theme and styling
-│   ├── logic/              # Business logic (filter, search, ...)
-│   ├── config/             # Read/write user settings
-│   └── utils/              # Generic helpers
-├── docs/                   # Project documentation
-└── .claude/                # Claude Code configuration (skills, agents, settings)
-```
+### Screens
 
-## Core Architectural Principle: One Interface for All Databases
+- **Welcome** — Shown when no database is open. Shows the product name,
+  a tagline, an **Open Database…** action, an **Open Recent** dropdown,
+  and a list of recently opened databases.
+- **Main window** — Shown once a database is open:
+  - Top toolbar (see below)
+  - One tab per open database, each with the engine's accent color
+  - Left pane: prefix-based tree of keys
+  - Center: table of key / value preview / size
+  - Bottom of center: value editor (collapsible)
+  - Bottom of window: status bar (see below)
+- **Open Database dialog** — Engine selector (Pebble / Badger / LevelDB),
+  path picker, "open in new tab" toggle, "read-only" toggle.
+- **Add key dialog** — Key field, value editor with UTF-8 / Hex / JSON
+  format toggle, byte-size readout.
+- **Edit key dialog** — Same as Add, prefilled, with validation for
+  duplicate keys.
+- **Delete confirmation** — Shows the key being deleted; destructive style.
+- **Settings dialog** — Tabbed: Appearance (theme, density), General
+  (paths, log level), Editor (font, pretty-print), Shortcuts (key bindings),
+  About.
 
-Every database adapter must implement a shared interface called `KVStore`:
+### Toolbar actions (top of main window)
+
+| Open | Close | ─ | Add | Edit | Delete | ─ | Refresh | Settings |
+
+### Status bar (bottom of main window)
+
+Engine dot + name | key count | on-disk size | open path (truncated) | theme toggle | settings icon
+
+### Filtering and matching
+
+A filter input above the key table. Filters by **key prefix**, **key substring**,
+**value substring**, or **key regex**. Multiple constraints are AND-ed. The
+table updates as the user types (debounced).
+
+### Editing values
+
+The value editor supports UTF-8, raw Hex view, and JSON pretty-print.
+Save and Cancel buttons commit or discard the edit. Unsaved changes show a
+visible marker.
+
+### Batch operations
+
+Multiple keys can be selected in the table for batch delete. Batch operations
+stop at the first failing key and report which one.
+
+### Database comparison
+
+Multiple databases can be open simultaneously, one tab each. Switching tabs
+swaps the entire body (tree + table + editor) for the other engine's data.
+
+### Persistent state
+
+User settings survive restarts:
+
+- Window size and position
+- Theme choice (light / dark / system)
+- Recently opened databases (path + engine + timestamp)
+
+Settings live at `~/.kvexplorer/config.json`. Logs live at
+`~/.kvexplorer/logs/` with daily rotation.
+
+### Keyboard shortcuts
+
+- `Cmd/Ctrl + O` — Open Database
+- `Cmd/Ctrl + W` — Close current tab
+- `Cmd/Ctrl + N` — Add key
+- `Cmd/Ctrl + F` — Focus filter
+- `Cmd/Ctrl + S` — Save value edits
+- `Delete` — Delete selected key (with confirm)
+- `F2` — Edit selected key
+- `F5` — Refresh
+- `Cmd/Ctrl + ,` — Settings
+- `Cmd/Ctrl + Tab` — Cycle tabs
+- `Esc` — Close dialog / clear filter / cancel edit
+
+Full visual design (colors, components, screen layouts) is in
+[`docs/design/`](./docs/design/).
+
+## Core Principle: One Interface for All Databases
+
+Every database adapter implements the same Go interface:
 
 ```go
 type KVStore interface {
@@ -48,7 +116,14 @@ type KVStore interface {
 }
 ```
 
-This pattern keeps the UI and logic layers completely decoupled from any specific database implementation.
+The UI sees only this interface. Adding a fourth engine means adding an
+adapter — no UI changes.
+
+## Project Layout
+
+Standard Go layout (`cmd/` + `internal/`). The current package map and the
+import rules between layers live in [`docs/architecture.md`](./docs/architecture.md);
+that document is authoritative. This file states principles, not paths.
 
 ## Common Commands
 
@@ -70,19 +145,20 @@ This pattern keeps the UI and logic layers completely decoupled from any specifi
 - **Comments**: Only where the "why" is non-obvious — not to describe "what"
 - **No `panic` in the main path** — propagate errors and let the UI decide
 
-## Project Conventions
+## Conventions
 
-1. Each database adapter lives in its own package (`internal/databases/<name>`).
-2. The UI must never import database packages directly — always go through the interface.
-3. User settings are stored in `~/.kvexplorer/config.json`.
-4. Logs are written to `~/.kvexplorer/logs/` with daily rotation.
-5. No secrets or machine-specific paths may be committed to the repo.
+1. **Adapters are siblings.** None imports another. Each implements
+   `KVStore` independently.
+2. **The UI never imports an adapter directly** — only the `KVStore` interface.
+3. **Theme tokens are the source of truth for color and size.** Never
+   hardcode in a widget.
+4. **No secrets or machine-specific paths** in the repo.
 
 ## Current Status
 
-The project is in the **bootstrap** phase. The base structure has been created;
-no core modules have been implemented yet. The first step is to implement the
-`KVStore` interface and the three database adapters.
+Foundation in place: theme system, welcome screen, `KVStore` interface,
+three adapter stubs, filter + batch logic, config load/save. Next: real
+adapter implementations and wiring the Open Database flow to the UI.
 
 ## Notes for AI Assistants
 
@@ -90,6 +166,9 @@ no core modules have been implemented yet. The first step is to implement the
 - Before every commit, ensure `go vet` and `go test ./...` pass.
 - When a file in `internal/databases/<x>/` changes, verify the other adapters
   still satisfy the interface uniformly.
+- **Do not blindly follow patterns from the previous KV-Toolbox codebase.**
+  Decide what's right for KV-Explorer from first principles — let user-facing
+  features dictate what backend code exists.
 - For specialized tasks, use the subagents defined in `.claude/agents/`.
 
 ## Commit Conventions
