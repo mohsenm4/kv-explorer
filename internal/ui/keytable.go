@@ -8,35 +8,20 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-type tableEntry struct {
-	key   []byte
-	value []byte
-}
-
-func loadEntries(s kvstore.Store) ([]tableEntry, error) {
-	it, err := s.Iter(nil)
-	if err != nil {
-		return nil, err
-	}
-	defer it.Close()
-	var out []tableEntry
-	for it.Next() {
-		e := it.Entry()
-		out = append(out, tableEntry{key: e.Key, value: e.Value})
-	}
-	return out, nil
-}
-
-// keyTable renders the central table of key / value preview / size.
-// onSelect is called when the user picks a row (wired into the editor
-// in Step 9).
-func keyTable(sess *app.Session, onSelect func(tableEntry)) fyne.CanvasObject {
-	entries, _ := loadEntries(sess.Store)
-
+// keyTable renders the central table of key / value preview / size. Cells
+// pull from sess.Entries() on each render so calling sess.Refresh() +
+// table.Refresh() will pick up edits made by the editor.
+// onSelect fires when the user picks a row.
+func keyTable(sess *app.Session, onSelect func(kvstore.Entry)) *widget.Table {
 	headers := []string{"Key", "Value preview", "Size"}
 
+	read := func() []kvstore.Entry {
+		entries, _ := sess.Entries()
+		return entries
+	}
+
 	table := widget.NewTableWithHeaders(
-		func() (int, int) { return len(entries), 3 },
+		func() (int, int) { return len(read()), 3 },
 		func() fyne.CanvasObject {
 			l := widget.NewLabel("")
 			l.TextStyle = fyne.TextStyle{Monospace: true}
@@ -47,15 +32,20 @@ func keyTable(sess *app.Session, onSelect func(tableEntry)) fyne.CanvasObject {
 			l := c.(*widget.Label)
 			l.TextStyle = fyne.TextStyle{Monospace: true}
 			l.Alignment = fyne.TextAlignLeading
+			entries := read()
+			if id.Row < 0 || id.Row >= len(entries) {
+				l.SetText("")
+				return
+			}
 			e := entries[id.Row]
 			switch id.Col {
 			case 0:
-				l.SetText(string(e.key))
+				l.SetText(string(e.Key))
 			case 1:
-				l.SetText(previewValue(e.value))
+				l.SetText(previewValue(e.Value))
 			case 2:
 				l.Alignment = fyne.TextAlignTrailing
-				l.SetText(humanSize(int64(len(e.value))))
+				l.SetText(humanSize(int64(len(e.Value))))
 			}
 		},
 	)
@@ -82,6 +72,7 @@ func keyTable(sess *app.Session, onSelect func(tableEntry)) fyne.CanvasObject {
 	table.SetColumnWidth(2, 80)
 
 	table.OnSelected = func(id widget.TableCellID) {
+		entries := read()
 		if onSelect != nil && id.Row >= 0 && id.Row < len(entries) {
 			onSelect(entries[id.Row])
 		}
@@ -94,7 +85,6 @@ func keyTable(sess *app.Session, onSelect func(tableEntry)) fyne.CanvasObject {
 func previewValue(v []byte) string {
 	const max = 120
 	s := string(v)
-	// Collapse newlines so multi-line JSON shows as one row.
 	for i := 0; i < len(s); i++ {
 		if s[i] == '\n' || s[i] == '\r' || s[i] == '\t' {
 			s = s[:i] + " " + s[i+1:]

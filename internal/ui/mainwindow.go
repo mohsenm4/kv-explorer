@@ -21,16 +21,30 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	bar := buildToolbar(onOpen, onClose)
 	tabs := tabStrip(v, sess)
 
+	editorBox := container.NewStack(emptyEditor(v))
+
+	var table *widget.Table
+	table = keyTable(sess, func(e kvstore.Entry) {
+		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, e, func() {
+			table.Refresh()
+		})}
+		editorBox.Refresh()
+	})
+
 	left := prefixTree(sess, func(key []byte) {
-		// TODO Step 9: scroll the table to this key + load into editor
-		_ = key
+		val, err := sess.Store.Get(key)
+		if err != nil {
+			return
+		}
+		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, kvstore.Entry{Key: key, Value: val}, func() {
+			table.Refresh()
+		})}
+		editorBox.Refresh()
 	})
-	table := keyTable(sess, func(e tableEntry) {
-		// TODO Step 9: surface the value in the editor
-		_ = e
-	})
-	editor := placeholderPane("Editor (Step 9)")
-	center := container.NewBorder(nil, editor, nil, nil, table)
+
+	center := container.NewVSplit(table, editorBox)
+	center.Offset = 0.62
+
 	split := container.NewHSplit(left, center)
 	split.Offset = 0.22
 
