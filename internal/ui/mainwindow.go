@@ -21,7 +21,12 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 	tabs := tabStrip(v, sess)
 
 	left := placeholderPane("Tree (Step 8)")
-	center := placeholderPane("Table (Step 7) + Editor (Step 9)")
+	table := keyTable(sess, func(e tableEntry) {
+		// TODO Step 9: surface the value in the editor
+		_ = e
+	})
+	editor := placeholderPane("Editor (Step 9)")
+	center := container.NewBorder(nil, editor, nil, nil, table)
 	split := container.NewHSplit(left, center)
 	split.Offset = 0.22
 
