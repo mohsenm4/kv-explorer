@@ -9,12 +9,23 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+
+	"github.com/mohsenm4/kv-explorer/internal/config"
 )
 
 type recentEntry struct {
 	path   string
 	engine string
 	when   time.Time
+}
+
+// recentsFromConfig converts the persisted entries into the ui-level form.
+func recentsFromConfig(rs []config.Recent) []recentEntry {
+	out := make([]recentEntry, 0, len(rs))
+	for _, r := range rs {
+		out = append(out, recentEntry{path: r.Path, engine: r.Engine, when: r.OpenedAt})
+	}
+	return out
 }
 
 func fakeRecents() []recentEntry {
@@ -26,7 +37,7 @@ func fakeRecents() []recentEntry {
 	}
 }
 
-func buildRecentBlock(v fyne.ThemeVariant, fg, muted color.Color, entries []recentEntry) fyne.CanvasObject {
+func buildRecentBlock(v fyne.ThemeVariant, fg, muted color.Color, entries []recentEntry, onPick func(recentEntry)) fyne.CanvasObject {
 	if len(entries) == 0 {
 		return container.NewWithoutLayout()
 	}
@@ -36,12 +47,12 @@ func buildRecentBlock(v fyne.ThemeVariant, fg, muted color.Color, entries []rece
 
 	rows := container.NewVBox()
 	for _, e := range entries {
-		rows.Add(recentRow(v, fg, muted, e))
+		rows.Add(recentRow(v, fg, muted, e, onPick))
 	}
 	return container.NewVBox(heading, rows)
 }
 
-func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry) fyne.CanvasObject {
+func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry, onPick func(recentEntry)) fyne.CanvasObject {
 	chip := engineChip(e.engine, v)
 	chipBox := container.New(layout.NewCustomPaddedLayout(0, 0, 0, 12), chip)
 
@@ -56,11 +67,16 @@ func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry) fyne.C
 	row := container.NewBorder(nil, nil, chipBox, whenBox, path)
 	padded := container.New(layout.NewCustomPaddedLayout(6, 6, 0, 0), row)
 	return newTappable(padded, func() {
-		fmt.Println("recent clicked:", e.path) // wired up in Step 5
+		if onPick != nil {
+			onPick(e)
+		}
 	})
 }
 
 func relTime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
 	d := time.Since(t)
 	switch {
 	case d < time.Minute:

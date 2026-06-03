@@ -9,9 +9,11 @@ import (
 	"fyne.io/fyne/v2/layout"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func(), onOpen func(OpenRequest)) fyne.CanvasObject {
+func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func(), onOpen func(OpenRequest), recents []recentEntry) fyne.CanvasObject {
 	th := a.Settings().Theme()
 	v := *variant
 
@@ -42,7 +44,12 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 
 	actions := container.NewHBox(layout.NewSpacer(), open, openRecent, layout.NewSpacer())
 
-	recentBlock := buildRecentBlock(v, fg, muted, fakeRecents())
+	if len(recents) == 0 {
+		recents = fakeRecents()
+	}
+	recentBlock := buildRecentBlock(v, fg, muted, recents, func(r recentEntry) {
+		onOpen(OpenRequest{Engine: kvstore.EngineKind(r.engine), Path: r.path, NewTab: false})
+	})
 
 	heroStack := container.NewVBox(
 		container.NewCenter(hero),
