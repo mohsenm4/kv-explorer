@@ -28,6 +28,14 @@ go run ./cmd/kvexplorer
 
 The full structure and conventions are documented in [CLAUDE.md](./CLAUDE.md).
 
+## Design
+
+UI design lives in Figma:
+<https://www.figma.com/design/QAe3rjM2Mrb5dCUZgDr4Dm/Untitled>
+
+Engineering reference (tokens, Fyne mapping, accessibility rules) is in
+[`docs/design/`](./docs/design/).
+
 ## Development
 
 - Run tests: `go test ./...`
