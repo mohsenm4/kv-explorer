@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -11,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func welcomePage(a fyne.App, variant *fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
+func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
 	th := a.Settings().Theme()
 	v := *variant
 
@@ -31,12 +32,14 @@ func welcomePage(a fyne.App, variant *fyne.ThemeVariant, onToggle func()) fyne.C
 	tagline.Alignment = fyne.TextAlignCenter
 
 	open := widget.NewButtonWithIcon("Open Database…", fynetheme.FolderOpenIcon(), func() {
-		// TODO Step 4: open database dialog
+		showOpenDatabase(w, func(req OpenRequest) {
+			fmt.Printf("open requested: %+v\n", req) // wired up in Step 5
+		})
 	})
 	open.Importance = widget.HighImportance
 
 	openRecent := widget.NewButtonWithIcon("Open Recent", fynetheme.MenuDropDownIcon(), func() {
-		// TODO Step 4: recent dropdown
+		// TODO Step 4: recent dropdown menu
 	})
 	openRecent.IconPlacement = widget.ButtonIconTrailingText
 

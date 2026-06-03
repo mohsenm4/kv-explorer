@@ -19,7 +19,7 @@ func Run() {
 
 	var render func()
 	render = func() {
-		w.SetContent(welcomePage(a, &variant, func() {
+		w.SetContent(welcomePage(a, w, &variant, func() {
 			if variant == fynetheme.VariantDark {
 				variant = fynetheme.VariantLight
 			} else {
