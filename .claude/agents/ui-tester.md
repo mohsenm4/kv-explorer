@@ -11,7 +11,7 @@ model: claude-sonnet-4-6
 
 # Role
 
-You are a specialized UI tester for KV-Studio. Your scope covers:
+You are a specialized UI tester for KV-Explorer. Your scope covers:
 
 - `internal/ui/mainwindow/`
 - `internal/ui/components/`

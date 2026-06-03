@@ -1,12 +1,12 @@
 # Architecture
 
-This document explains how KV-Studio is organized and how data flows through
+This document explains how KV-Explorer is organized and how data flows through
 the system. It is meant for new contributors and stakeholders who want to
 understand the project without reading the source.
 
 ## Layered View
 
-KV-Studio is split into four layers. Each layer depends only on the layer
+KV-Explorer is split into four layers. Each layer depends only on the layer
 below it — never the other way around.
 
 ```text
@@ -75,7 +75,7 @@ sentinel error across PebbleDB, BadgerDB, and LevelDB.
 | BadgerDB  | Mixed workloads, embedded use  | LSM-tree, pure Go, value-log architecture |
 | LevelDB   | Read-heavy, small to medium    | Classic LSM-tree, requires CGO            |
 
-KV-Studio does not pick a winner — it lets the user compare them side by side.
+KV-Explorer does not pick a winner — it lets the user compare them side by side.
 
 ## Data Flow Example: Setting a Key
 
@@ -108,7 +108,7 @@ code as possible:
 ## Configuration
 
 User settings (window size, last opened path, theme choice) are stored in
-`~/.kvstudio/config.json`. Logs go to `~/.kvstudio/logs/`. Neither location
+`~/.kvexplorer/config.json`. Logs go to `~/.kvexplorer/logs/`. Neither location
 is touched by the test suite.
 
 ## What This Document Is Not

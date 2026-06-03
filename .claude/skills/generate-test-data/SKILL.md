@@ -24,7 +24,7 @@ Produce reproducible datasets used for UI testing, performance work, and filter 
 Use the built-in generator:
 
 ```bash
-go run ./cmd/kvstudio --generate-test-data \
+go run ./cmd/kvexplorer --generate-test-data \
     --db=<pebble|badger|leveldb> \
     --pattern=<sequential|random|hierarchical|large> \
     --count=<N> \

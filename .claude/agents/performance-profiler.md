@@ -11,7 +11,7 @@ model: claude-opus-4-7
 
 # Role
 
-You are a performance specialist. Your job is to identify bottlenecks and memory leaks in KV-Studio.
+You are a performance specialist. Your job is to identify bottlenecks and memory leaks in KV-Explorer.
 
 # Steps
 

@@ -1,6 +1,6 @@
 ---
 name: Build Cross Platform
-description: Build KV-Studio binaries for macOS (Intel/ARM), Linux, and Windows in one pass
+description: Build KV-Explorer binaries for macOS (Intel/ARM), Linux, and Windows in one pass
 examples:
   - "/build-cross-platform"
   - "/build-cross-platform --release"
@@ -27,9 +27,9 @@ examples:
 2. Build for each platform:
 
    ```bash
-   fyne-cross darwin  -arch=amd64,arm64 ./cmd/kvstudio
-   fyne-cross linux   -arch=amd64        ./cmd/kvstudio
-   fyne-cross windows -arch=amd64        ./cmd/kvstudio
+   fyne-cross darwin  -arch=amd64,arm64 ./cmd/kvexplorer
+   fyne-cross linux   -arch=amd64        ./cmd/kvexplorer
+   fyne-cross windows -arch=amd64        ./cmd/kvexplorer
    ```
 
 3. Output binaries land in `fyne-cross/bin/<platform>/`.

@@ -1,4 +1,4 @@
-# KV-Studio
+# KV-Explorer
 
 A desktop GUI tool for managing and inspecting key-value databases.
 This project is a complete, modern rewrite of "KV-Toolbox" with AI assistance.
@@ -14,8 +14,8 @@ This project is a complete, modern rewrite of "KV-Toolbox" with AI assistance.
 The project follows the standard Go layout with `cmd/` and `internal/` separation:
 
 ```text
-kv-studio/
-├── cmd/kvstudio/           # Application entry point (main package)
+kv-explorer/
+├── cmd/kvexplorer/         # Application entry point (main package)
 ├── internal/
 │   ├── databases/          # Per-database adapters
 │   │   ├── pebble/         # PebbleDB implementation
@@ -52,13 +52,13 @@ This pattern keeps the UI and logic layers completely decoupled from any specifi
 
 ## Common Commands
 
-| Command                    | Purpose                            |
-| -------------------------- | ---------------------------------- |
-| `go build ./cmd/kvstudio`  | Build the binary                   |
-| `go run ./cmd/kvstudio`    | Run the app in development mode    |
-| `go test ./...`            | Run the full test suite            |
-| `go vet ./...`             | Static analysis                    |
-| `gofmt -w .`               | Format code                        |
+| Command                      | Purpose                         |
+| ---------------------------- | ------------------------------- |
+| `go build ./cmd/kvexplorer`  | Build the binary                |
+| `go run ./cmd/kvexplorer`    | Run the app in development mode |
+| `go test ./...`              | Run the full test suite         |
+| `go vet ./...`               | Static analysis                 |
+| `gofmt -w .`                 | Format code                     |
 
 ## Coding Standards
 
@@ -74,8 +74,8 @@ This pattern keeps the UI and logic layers completely decoupled from any specifi
 
 1. Each database adapter lives in its own package (`internal/databases/<name>`).
 2. The UI must never import database packages directly — always go through the interface.
-3. User settings are stored in `~/.kvstudio/config.json`.
-4. Logs are written to `~/.kvstudio/logs/` with daily rotation.
+3. User settings are stored in `~/.kvexplorer/config.json`.
+4. Logs are written to `~/.kvexplorer/logs/` with daily rotation.
 5. No secrets or machine-specific paths may be committed to the repo.
 
 ## Current Status

@@ -8,7 +8,7 @@ examples:
 
 # Database Benchmark Runner
 
-This skill compares the performance of the three supported KV-Studio databases.
+This skill compares the performance of the three supported KV-Explorer databases.
 
 ## Steps
 

@@ -3,7 +3,7 @@
 *.dll
 *.so
 *.dylib
-kvstudio
+kvexplorer
 /bin/
 /build/
 /dist/
