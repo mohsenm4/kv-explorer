@@ -12,7 +12,7 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeVariant, onOpen func(), onClose, onToggle func()) fyne.CanvasObject {
+func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeVariant, onOpen, onClose, onToggle, onSettings func()) fyne.CanvasObject {
 	v := *variant
 
 	accent := canvas.NewRectangle(apptheme.DBAccent(string(sess.Engine), v))
@@ -91,8 +91,8 @@ func mainPage(a fyne.App, w fyne.Window, sess *app.Session, variant *fyne.ThemeV
 			}
 			showDeleteKey(w, sess, current.Key, refreshAll)
 		},
-		OnRefresh: refreshAll,
-		// OnSettings wired in Step 14
+		OnRefresh:  refreshAll,
+		OnSettings: onSettings,
 	}
 	toolbar = buildToolbar(actions)
 	toolbar.editBtn.Disable()

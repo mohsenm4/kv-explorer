@@ -14,7 +14,9 @@ import (
 func Run() {
 	a := fyneapp.NewWithID("com.kvexplorer.app")
 
-	variant := a.Settings().ThemeVariant()
+	systemVariant := a.Settings().ThemeVariant()
+	themePref := "system"
+	variant := systemVariant
 	applyTheme(a, variant)
 
 	w := a.NewWindow("KV-Explorer")
@@ -22,6 +24,20 @@ func Run() {
 
 	var session *app.Session
 	var render func()
+
+	setTheme := func(pref string) {
+		themePref = pref
+		switch pref {
+		case "light":
+			variant = fynetheme.VariantLight
+		case "dark":
+			variant = fynetheme.VariantDark
+		default:
+			variant = a.Settings().ThemeVariant()
+		}
+		applyTheme(a, variant)
+		render()
+	}
 
 	openReq := func(req OpenRequest) {
 		sess, err := app.OpenSession(req.Engine, req.Path, kvstore.OpenOptions{ReadOnly: req.ReadOnly})
@@ -46,28 +62,30 @@ func Run() {
 
 	toggleTheme := func() {
 		if variant == fynetheme.VariantDark {
-			variant = fynetheme.VariantLight
+			setTheme("light")
 		} else {
-			variant = fynetheme.VariantDark
+			setTheme("dark")
 		}
-		applyTheme(a, variant)
-		render()
 	}
 
 	openFromMain := func() {
 		showOpenDatabase(w, openReq)
 	}
 
+	openSettings := func() {
+		showSettings(w, themePref, SettingsHandlers{OnTheme: setTheme})
+	}
+
 	render = func() {
 		if session == nil {
 			w.SetContent(welcomePage(a, w, &variant, toggleTheme, openReq))
 		} else {
-			w.SetContent(mainPage(a, w, session, &variant, openFromMain, closeSess, toggleTheme))
+			w.SetContent(mainPage(a, w, session, &variant, openFromMain, closeSess, toggleTheme, openSettings))
 		}
 	}
 	render()
 
-	w.SetMainMenu(mainMenu(w, openFromMain, closeSess, toggleTheme))
+	w.SetMainMenu(mainMenu(w, openFromMain, closeSess, toggleTheme, openSettings))
 
 	w.ShowAndRun()
 }

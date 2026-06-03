@@ -8,10 +8,12 @@ import (
 // mainMenu builds the File/Edit/View/Help menu. On macOS Fyne renders this
 // in the system menu bar (top of screen); on Linux/Windows it sits inside
 // the window as a strip under the title bar.
-func mainMenu(w fyne.Window, openDialog, closeSession, toggleTheme func()) *fyne.MainMenu {
+func mainMenu(w fyne.Window, openDialog, closeSession, toggleTheme, openSettings func()) *fyne.MainMenu {
 	file := fyne.NewMenu("File",
 		fyne.NewMenuItem("Open…", openDialog),
 		fyne.NewMenuItem("Close", closeSession),
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Settings…", openSettings),
 	)
 	edit := fyne.NewMenu("Edit",
 		disabledItem("Add Key…"),
