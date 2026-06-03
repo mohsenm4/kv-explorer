@@ -1,6 +1,6 @@
 ---
 name: Lint
-description: فرمت‌بندی + بررسی استاتیک کد
+description: Format code and run static analysis
 ---
 
 # Lint
@@ -9,9 +9,10 @@ description: فرمت‌بندی + بررسی استاتیک کد
 gofmt -w . && go vet ./...
 ```
 
-اگر `golangci-lint` نصب باشد، آن را هم اجرا کن:
+If `golangci-lint` is installed, run it as well:
+
 ```bash
 golangci-lint run ./...
 ```
 
-گزارش بده چه فایل‌هایی فرمت شدند و چه issuesی مانده است.
+Report which files were reformatted and any issues that remain.

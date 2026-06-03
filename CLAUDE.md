@@ -1,40 +1,40 @@
 # KV-Studio
 
-ابزار گرافیکی دسکتاپ برای مدیریت و بررسی پایگاه‌داده‌های کلید-مقدار (Key-Value Stores).
-این پروژه بازنویسی کامل و مدرن «KV-Toolbox» با کمک هوش مصنوعی است.
+A desktop GUI tool for managing and inspecting key-value databases.
+This project is a complete, modern rewrite of "KV-Toolbox" with AI assistance.
 
-## دیتابیس‌های پشتیبانی‌شده
+## Supported Databases
 
-- **PebbleDB** — موتور سطح پایین مبتنی بر LSM-Tree (مشتق‌شده از RocksDB)
-- **BadgerDB** — KV store پراستفاده در پروژه‌های Go-native
-- **LevelDB** — کلاسیک، ساده، سبک
+- **PebbleDB** — Low-level LSM-Tree engine (derived from RocksDB)
+- **BadgerDB** — Popular Go-native KV store
+- **LevelDB** — Classic, simple, lightweight
 
-## معماری
+## Architecture
 
-پروژه از الگوی استاندارد Go با تفکیک `cmd/` و `internal/` پیروی می‌کند:
+The project follows the standard Go layout with `cmd/` and `internal/` separation:
 
-```
+```text
 kv-studio/
-├── cmd/kvstudio/           # نقطه‌ی ورود برنامه (main package)
+├── cmd/kvstudio/           # Application entry point (main package)
 ├── internal/
-│   ├── databases/          # آداپتورهای هر دیتابیس
-│   │   ├── pebble/         # پیاده‌سازی برای PebbleDB
-│   │   ├── badger/         # پیاده‌سازی برای BadgerDB
-│   │   └── leveldb/        # پیاده‌سازی برای LevelDB
-│   ├── ui/                 # لایه‌ی رابط کاربری (Fyne)
-│   │   ├── mainwindow/     # پنجره‌ی اصلی
-│   │   ├── components/     # ویجت‌های قابل استفاده‌ی مجدد
-│   │   └── theme/          # تم و استایل
-│   ├── logic/              # منطق کسب‌وکار (filter, search, ...)
-│   ├── config/             # خواندن/نوشتن تنظیمات
-│   └── utils/              # توابع کمکی عمومی
-├── docs/                   # مستندات فنی پروژه
-└── .claude/                # پیکربندی Claude Code (skills, agents, settings)
+│   ├── databases/          # Per-database adapters
+│   │   ├── pebble/         # PebbleDB implementation
+│   │   ├── badger/         # BadgerDB implementation
+│   │   └── leveldb/        # LevelDB implementation
+│   ├── ui/                 # UI layer (Fyne)
+│   │   ├── mainwindow/     # Main window
+│   │   ├── components/     # Reusable widgets
+│   │   └── theme/          # Theme and styling
+│   ├── logic/              # Business logic (filter, search, ...)
+│   ├── config/             # Read/write user settings
+│   └── utils/              # Generic helpers
+├── docs/                   # Project documentation
+└── .claude/                # Claude Code configuration (skills, agents, settings)
 ```
 
-## اصل کلیدی معماری: یک Interface برای همه‌ی دیتابیس‌ها
+## Core Architectural Principle: One Interface for All Databases
 
-هر دیتابیس باید interface مشترکی به نام `KVStore` را پیاده‌سازی کند:
+Every database adapter must implement a shared interface called `KVStore`:
 
 ```go
 type KVStore interface {
@@ -48,43 +48,46 @@ type KVStore interface {
 }
 ```
 
-این الگو باعث می‌شود لایه‌ی UI و logic از پیاده‌سازی هر دیتابیس کاملاً مستقل باشد.
+This pattern keeps the UI and logic layers completely decoupled from any specific database implementation.
 
-## دستورات اصلی
+## Common Commands
 
-| دستور | توضیح |
-|---|---|
-| `go build ./cmd/kvstudio` | بیلد باینری |
-| `go run ./cmd/kvstudio` | اجرای برنامه در حالت توسعه |
-| `go test ./...` | اجرای کل تست‌ها |
-| `go vet ./...` | بررسی استاتیک کد |
-| `gofmt -w .` | فرمت‌بندی |
+| Command                    | Purpose                            |
+| -------------------------- | ---------------------------------- |
+| `go build ./cmd/kvstudio`  | Build the binary                   |
+| `go run ./cmd/kvstudio`    | Run the app in development mode    |
+| `go test ./...`            | Run the full test suite            |
+| `go vet ./...`             | Static analysis                    |
+| `gofmt -w .`               | Format code                        |
 
-## استانداردهای کدنویسی
+## Coding Standards
 
-- **زبان**: Go 1.22+
-- **رابط گرافیکی**: Fyne v2
-- **ساختار خطاها**: استفاده از `errors.Is`/`errors.As` و wrapping با `fmt.Errorf("...: %w", err)`
-- **نام‌گذاری**: UpperCamelCase برای exported، lowerCamelCase برای داخلی
-- **تست**: هر پکیج `internal/...` باید فایل `*_test.go` همراه داشته باشد
-- **کامنت**: فقط جایی که «چرا» غیرواضح است — نه برای توضیح «چه».
-- **هیچ `panic` در مسیر اصلی** — همه‌ی خطاها باید propagate شوند تا UI تصمیم بگیرد.
+- **Language**: Go 1.22+
+- **GUI**: Fyne v2
+- **Error handling**: Use `errors.Is`/`errors.As` and wrap with `fmt.Errorf("...: %w", err)`
+- **Naming**: UpperCamelCase for exported, lowerCamelCase for internal
+- **Tests**: Every `internal/...` package must have an accompanying `*_test.go` file
+- **Comments**: Only where the "why" is non-obvious — not to describe "what"
+- **No `panic` in the main path** — propagate errors and let the UI decide
 
-## قراردادهای پروژه
+## Project Conventions
 
-1. هر آداپتور دیتابیس در پکیج جداگانه‌ی خود (`internal/databases/<name>`) قرار می‌گیرد.
-2. UI نباید مستقیماً به packageهای دیتابیس import داشته باشد — همیشه از طریق interface.
-3. تنظیمات کاربر در `~/.kvstudio/config.json` ذخیره می‌شود.
-4. لاگ‌ها در `~/.kvstudio/logs/` با rotation روزانه نوشته می‌شوند.
-5. هیچ secret یا path خاص ماشین در ریپو commit نمی‌شود.
+1. Each database adapter lives in its own package (`internal/databases/<name>`).
+2. The UI must never import database packages directly — always go through the interface.
+3. User settings are stored in `~/.kvstudio/config.json`.
+4. Logs are written to `~/.kvstudio/logs/` with daily rotation.
+5. No secrets or machine-specific paths may be committed to the repo.
 
-## وضعیت فعلی
+## Current Status
 
-این پروژه در فاز **bootstrap** قرار دارد. ساختار پایه ایجاد شده و توسعه‌ی modules اصلی هنوز شروع نشده است. اولین گام، پیاده‌سازی interface و سه آداپتور دیتابیس است.
+The project is in the **bootstrap** phase. The base structure has been created;
+no core modules have been implemented yet. The first step is to implement the
+`KVStore` interface and the three database adapters.
 
-## برای Claude
+## Notes for Claude
 
-- پیش از تغییرات معماری بزرگ، **حالت plan** را فعال کن.
-- پیش از هر commit، اطمینان حاصل کن `go vet` و `go test ./...` با موفقیت می‌گذرند.
-- وقتی فایلی در `internal/databases/<x>/` تغییر می‌کند، آداپتورهای دیگر را هم بررسی کن که interface هنوز یکدست است.
-- برای کارهای تخصصی، از subagentهای تعریف‌شده در `.claude/agents/` استفاده کن.
+- Before making large architectural changes, enter **plan mode**.
+- Before every commit, ensure `go vet` and `go test ./...` pass.
+- When a file in `internal/databases/<x>/` changes, verify the other adapters
+  still satisfy the interface uniformly.
+- For specialized tasks, use the subagents defined in `.claude/agents/`.

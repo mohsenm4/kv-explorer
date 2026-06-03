@@ -1,16 +1,14 @@
 ---
 name: Run All Tests
-description: اجرای کامل تست‌ها همراه با go vet و گزارش پوشش
+description: Run the full test suite together with go vet and report coverage
 ---
 
-# اجرای کامل تست
+# Run All Tests
 
 ```bash
 go vet ./... && go test -race -cover ./...
 ```
 
-اگر هر کدام شکست بخورند، خروجی را تحلیل کن و پیشنهاد اصلاح بده.
-گزارش نهایی:
-- تعداد تست‌های گذرانده/شکسته
-- درصد پوشش هر پکیج
-- هشدارهای `go vet`
+If anything fails, analyze the output and propose fixes.
+
+The final report should include pass/fail counts, coverage percentage per package, and any `go vet` warnings.

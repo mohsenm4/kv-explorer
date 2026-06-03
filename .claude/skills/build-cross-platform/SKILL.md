@@ -1,42 +1,46 @@
 ---
 name: Build Cross Platform
-description: بیلد همزمان باینری‌های KV-Studio برای macOS (Intel/ARM)، Linux و Windows
+description: Build KV-Studio binaries for macOS (Intel/ARM), Linux, and Windows in one pass
 examples:
   - "/build-cross-platform"
   - "/build-cross-platform --release"
 ---
 
-# بیلد چندسکویی
+# Cross-Platform Build
 
-## پیش‌نیاز
+## Prerequisites
 
-- نصب بودن `fyne-cross` (برای CGO و GUI cross-compile):
+- `fyne-cross` installed (handles CGO and GUI cross-compilation):
+
   ```bash
   go install github.com/fyne-io/fyne-cross@latest
   ```
 
-## مراحل
+## Steps
 
-1. پاک‌سازی دایرکتوری بیلد:
+1. Clean the build directory:
+
    ```bash
    rm -rf ./build
    ```
 
-2. بیلد برای هر سکو:
+2. Build for each platform:
+
    ```bash
-   fyne-cross darwin -arch=amd64,arm64 ./cmd/kvstudio
-   fyne-cross linux  -arch=amd64        ./cmd/kvstudio
+   fyne-cross darwin  -arch=amd64,arm64 ./cmd/kvstudio
+   fyne-cross linux   -arch=amd64        ./cmd/kvstudio
    fyne-cross windows -arch=amd64        ./cmd/kvstudio
    ```
 
-3. خروجی‌ها در `fyne-cross/bin/<platform>/` ذخیره می‌شوند.
+3. Output binaries land in `fyne-cross/bin/<platform>/`.
 
-4. تولید checksum برای هر باینری:
+4. Generate checksums for every artifact:
+
    ```bash
    shasum -a 256 fyne-cross/bin/**/* > build/checksums.txt
    ```
 
-## نکته
+## Notes
 
-- بیلد macOS ARM روی Intel سیستم نیاز به Docker دارد (fyne-cross استفاده می‌کند).
-- پیش از انتشار، نسخه را در `internal/config/version.go` به‌روز کن.
+- Building macOS ARM from an Intel host requires Docker (`fyne-cross` uses it).
+- Bump the version string in `internal/config/version.go` before a release.

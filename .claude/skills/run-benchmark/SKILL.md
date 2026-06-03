@@ -1,32 +1,35 @@
 ---
 name: Run DB Benchmark
-description: اجرای benchmark مقایسه‌ای بین سه دیتابیس PebbleDB، BadgerDB و LevelDB روی عملیات Set/Get/Delete/Iterate
+description: Run a comparative benchmark across PebbleDB, BadgerDB, and LevelDB for Set/Get/Delete/Iterate operations
 examples:
   - "/run-benchmark"
   - "/run-benchmark --keys=1000000"
 ---
 
-# اجرای Benchmark دیتابیس‌ها
+# Database Benchmark Runner
 
-این skill برای مقایسه‌ی سرعت سه دیتابیس پشتیبانی‌شده در KV-Studio استفاده می‌شود.
+This skill compares the performance of the three supported KV-Studio databases.
 
-## مراحل اجرا
+## Steps
 
-1. اطمینان از وجود پکیج‌های benchmark در `internal/databases/<x>/bench_test.go`
-2. اجرای benchmarkها:
+1. Verify that benchmark packages exist in `internal/databases/<x>/bench_test.go`.
+2. Run the benchmarks:
+
    ```bash
    go test -bench=. -benchmem -benchtime=5s ./internal/databases/...
    ```
-3. جمع‌آوری خروجی و تولید جدول مقایسه‌ای در `docs/benchmarks/YYYY-MM-DD.md`
-4. ثبت ns/op، B/op و allocs/op برای هر عملیات
 
-## معیارهای مقایسه
+3. Collect the output and generate a comparison report at `docs/benchmarks/YYYY-MM-DD.md`.
+4. Record `ns/op`, `B/op`, and `allocs/op` for each operation.
 
-- **Set throughput** — کلید/ثانیه برای نوشتن متوالی
-- **Get latency** — میانگین زمان خواندن یک کلید
-- **Iterate scan rate** — کلید/ثانیه برای پیمایش range
-- **Memory overhead** — تخصیص حافظه به ازای هر عملیات
+## Comparison Metrics
 
-## خروجی نهایی
+- **Set throughput** — keys per second for sequential writes
+- **Get latency** — average single-key read time
+- **Iterate scan rate** — keys per second for range scans
+- **Memory overhead** — allocations per operation
 
-گزارش به‌صورت Markdown با نمودار جدول مقایسه‌ای و توصیه‌ی استفاده برای هر سناریو (read-heavy, write-heavy, mixed).
+## Final Output
+
+A Markdown report containing a comparison table and a usage recommendation
+per scenario (read-heavy, write-heavy, mixed).

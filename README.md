@@ -1,39 +1,39 @@
 # KV-Studio
 
-ابزار گرافیکی دسکتاپ برای مدیریت، بررسی و مقایسه‌ی پایگاه‌داده‌های کلید-مقدار.
-بازنویسی کامل و مدرن KV-Toolbox با کمک هوش مصنوعی.
+A desktop GUI tool for managing, inspecting, and comparing key-value databases.
+A complete, modern rewrite of KV-Toolbox with AI assistance.
 
-## دیتابیس‌های پشتیبانی‌شده
+## Supported Databases
 
 - PebbleDB
 - BadgerDB
 - LevelDB
 
-## نیازمندی‌ها
+## Requirements
 
-- Go 1.22 یا بالاتر
-- CGO فعال (برای LevelDB)
+- Go 1.22 or newer
+- CGO enabled (required by LevelDB)
 - macOS / Linux / Windows
 
-## شروع سریع
+## Quick Start
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/mohsenm4/kv-studio.git
 cd kv-studio
 go mod tidy
 go run ./cmd/kvstudio
 ```
 
-## ساختار پروژه
+## Project Structure
 
-ساختار کامل و قراردادها در [CLAUDE.md](./CLAUDE.md) توضیح داده شده است.
+The full structure and conventions are documented in [CLAUDE.md](./CLAUDE.md).
 
-## توسعه
+## Development
 
-- اجرای تست‌ها: `go test ./...`
-- بیلد: `go build ./cmd/kvstudio`
-- بیلد چندسکویی: مراجعه به skill `/build-cross-platform`
+- Run tests: `go test ./...`
+- Build: `go build ./cmd/kvstudio`
+- Cross-platform build: see the `/build-cross-platform` skill
 
-## مجوز
+## License
 
 TBD

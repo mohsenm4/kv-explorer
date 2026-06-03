@@ -1,27 +1,28 @@
 ---
 name: Generate Test Data
-description: تولید مجموعه‌داده‌ی تستی برای پر کردن هر یک از سه دیتابیس با کلید/مقدارهای واقع‌گرایانه
+description: Populate any of the three databases with realistic synthetic key/value datasets
 examples:
   - "/generate-test-data"
   - "/generate-test-data --count=100000 --db=badger"
 ---
 
-# تولید داده‌ی تست
+# Test Data Generator
 
-## هدف
+## Purpose
 
-ساخت دیتاست‌های قابل تکرار برای تست UI، performance و رفتار filter.
+Produce reproducible datasets used for UI testing, performance work, and filter behavior validation.
 
-## الگوهای داده
+## Data Patterns
 
-1. **Sequential keys** — `user:0001` تا `user:NNNN`
-2. **Random keys** — UUIDv4 با مقدار JSON تصادفی
+1. **Sequential keys** — `user:0001` through `user:NNNN`
+2. **Random keys** — UUIDv4 keys with random JSON values
 3. **Hierarchical keys** — `org/<id>/user/<id>/profile`
-4. **Large values** — مقادیر باینری ۱KB تا ۱MB
+4. **Large values** — binary blobs from 1KB to 1MB
 
-## اجرا
+## Execution
 
-اسکریپت داخلی برای تولید:
+Use the built-in generator:
+
 ```bash
 go run ./cmd/kvstudio --generate-test-data \
     --db=<pebble|badger|leveldb> \
@@ -30,7 +31,7 @@ go run ./cmd/kvstudio --generate-test-data \
     --output=./testdata/<db>-<pattern>.db
 ```
 
-## نکته
+## Notes
 
-- داده‌ی تست در `testdata/` ذخیره می‌شود (در `.gitignore` هست).
-- seed تصادفی همیشه ثابت بمونه تا نتایج قابل تکرار باشن.
+- Test data lives under `testdata/` (ignored by git).
+- Keep the random seed fixed so results stay reproducible across runs.
