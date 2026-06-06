@@ -20,10 +20,10 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// valueEditor renders the editable value pane for a single entry. The body
-// is chosen by content kind: text gets an editor, images get a preview
-// with Replace…, arbitrary binary gets editable hex. Save is the same
-// outer button for text/hex; image saves via its own Replace flow.
+// valueEditor renders the editable value pane for a single entry. A
+// Format toggle (Auto / Text / Hex / Image) lets the user pick a body
+// regardless of the auto-detected content kind. Save commits the staged
+// bytes; Cancel reverts to the original.
 func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, entry kvstore.Entry, onSaved func()) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	fg := themeColor(v, fynetheme.ColorNameForeground)
@@ -42,21 +42,59 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		nil,
 	)
 
-	kind, mime := DetectContent(entry.Value)
-	var body fyne.CanvasObject
-	var current func() ([]byte, error) // nil = outer Save disabled (image handles itself)
+	detected, mime := DetectContent(entry.Value)
+
+	bodyStack := container.NewStack()
+	var current func() ([]byte, error)
 	var reset func()
 
-	switch kind {
-	case KindImage:
-		body = imageBody(v, sess, parent, entry, onSaved)
-	case KindBinary:
-		body, current, reset = hexBody(v, entry.Value, mime)
-	default:
-		body, current, reset = textBody(entry.Value)
+	rebuild := func(mode string) {
+		var body fyne.CanvasObject
+		switch mode {
+		case "Text":
+			body, current, reset = textBody(entry.Value)
+		case "Hex":
+			body, current, reset = hexBody(v, entry.Value, mime)
+		case "Image":
+			body, current, reset = imageBody(v, parent, entry.Value, mime)
+		default: // Auto
+			switch detected {
+			case KindImage:
+				body, current, reset = imageBody(v, parent, entry.Value, mime)
+			case KindBinary:
+				body, current, reset = hexBody(v, entry.Value, mime)
+			default:
+				body, current, reset = textBody(entry.Value)
+			}
+		}
+		bodyStack.Objects = []fyne.CanvasObject{body}
+		bodyStack.Refresh()
 	}
 
-	cancel := widget.NewButton("Cancel", reset)
+	format := widget.NewRadioGroup([]string{"Auto", "Text", "Hex", "Image"}, func(s string) {
+		rebuild(s)
+	})
+	format.Horizontal = true
+	format.SetSelected("Auto")
+	rebuild("Auto")
+
+	formatLabel := canvas.NewText("Format:", muted)
+	formatLabel.TextSize = 11
+
+	detection := canvas.NewText(fmt.Sprintf("Detected: %s", mime), muted)
+	detection.TextSize = 11
+
+	formatBar := container.NewBorder(nil, nil,
+		container.NewHBox(formatLabel, format),
+		detection,
+		nil,
+	)
+
+	cancel := widget.NewButton("Cancel", func() {
+		if reset != nil {
+			reset()
+		}
+	})
 	save := widget.NewButton("Save changes", func() {
 		if current == nil {
 			return
@@ -78,15 +116,17 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		}
 	})
 	save.Importance = widget.HighImportance
-	if current == nil {
-		save.Disable()
-		cancel.Disable()
-	}
 
 	footer := container.NewBorder(nil, nil, layout.NewSpacer(),
 		container.NewHBox(cancel, save), nil)
 
-	return container.NewBorder(container.NewPadded(header), container.NewPadded(footer), nil, nil, body)
+	center := container.NewBorder(
+		container.NewPadded(formatBar),
+		nil, nil, nil,
+		container.NewVScroll(bodyStack),
+	)
+
+	return container.NewBorder(container.NewPadded(header), container.NewPadded(footer), nil, nil, center)
 }
 
 func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) {
@@ -99,17 +139,35 @@ func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) 
 		func() { be.SetText(displayValue(value)) }
 }
 
-func imageBody(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, entry kvstore.Entry, onSaved func()) fyne.CanvasObject {
+// imageBody renders an image preview plus a Replace… button that stages
+// new bytes. Save commits staged → store; Cancel reverts to the original.
+// Replace accepts any file, so picking a text/.txt also works — after
+// save the next selection will auto-detect the new content.
+func imageBody(v fyne.ThemeVariant, parent fyne.Window, value []byte, mime string) (fyne.CanvasObject, func() ([]byte, error), func()) {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 
-	_, mime := DetectContent(entry.Value)
-	res := fyne.NewStaticResource("value", entry.Value)
+	staged := value
+	pending := false
+
+	res := fyne.NewStaticResource("value", value)
 	img := canvas.NewImageFromResource(res)
 	img.FillMode = canvas.ImageFillContain
 	img.SetMinSize(fyne.NewSize(200, 200))
 
-	info := canvas.NewText(fmt.Sprintf("%s · %s", mime, humanSize(int64(len(entry.Value)))), muted)
+	info := canvas.NewText(fmt.Sprintf("%s · %s", mime, humanSize(int64(len(value)))), muted)
 	info.TextSize = 11
+
+	refreshPreview := func() {
+		img.Resource = fyne.NewStaticResource("value", staged)
+		img.Refresh()
+		_, m := DetectContent(staged)
+		suffix := ""
+		if pending {
+			suffix = " · pending"
+		}
+		info.Text = fmt.Sprintf("%s · %s%s", m, humanSize(int64(len(staged))), suffix)
+		info.Refresh()
+	}
 
 	replace := widget.NewButtonWithIcon("Replace…", fynetheme.UploadIcon(), func() {
 		dialog.ShowFileOpen(func(rc fyne.URIReadCloser, err error) {
@@ -122,26 +180,25 @@ func imageBody(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, entry
 				dialog.ShowError(ioErr, parent)
 				return
 			}
-			if err := sess.Store.Set(entry.Key, data); err != nil {
-				dialog.ShowError(err, parent)
-				return
-			}
-			if err := sess.Refresh(); err != nil {
-				fyne.LogError("refresh failed", err)
-			}
-			img.Resource = fyne.NewStaticResource("value", data)
-			img.Refresh()
-			_, newMime := DetectContent(data)
-			info.Text = fmt.Sprintf("%s · %s", newMime, humanSize(int64(len(data))))
-			info.Refresh()
-			if onSaved != nil {
-				onSaved()
-			}
+			staged = data
+			pending = true
+			refreshPreview()
 		}, parent)
 	})
 
 	bottom := container.NewBorder(nil, nil, container.NewPadded(info), replace, nil)
-	return container.NewBorder(nil, bottom, nil, nil, img)
+	body := container.NewBorder(nil, bottom, nil, nil, img)
+
+	current := func() ([]byte, error) {
+		pending = false
+		return staged, nil
+	}
+	resetFn := func() {
+		staged = value
+		pending = false
+		refreshPreview()
+	}
+	return body, current, resetFn
 }
 
 func hexBody(v fyne.ThemeVariant, value []byte, mime string) (fyne.CanvasObject, func() ([]byte, error), func()) {
@@ -166,8 +223,8 @@ func hexBody(v fyne.ThemeVariant, value []byte, mime string) (fyne.CanvasObject,
 		}, text.Text)
 		return hex.DecodeString(clean)
 	}
-	reset := func() { text.SetText(hexEditFormat(value)) }
-	return body, current, reset
+	resetFn := func() { text.SetText(hexEditFormat(value)) }
+	return body, current, resetFn
 }
 
 func hexEditFormat(v []byte) string {
