@@ -12,7 +12,6 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -95,6 +94,23 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 			reset()
 		}
 	})
+	commit := func(data []byte) {
+		withProgress(parent, "Saving…", func() error {
+			if err := sess.Store.Set(entry.Key, data); err != nil {
+				return err
+			}
+			return sess.Refresh()
+		}, func(err error) {
+			if err != nil {
+				dialog.ShowError(err, parent)
+				return
+			}
+			if onSaved != nil {
+				onSaved()
+			}
+		})
+	}
+
 	save := widget.NewButton("Save changes", func() {
 		if current == nil {
 			return
@@ -104,20 +120,51 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 			dialog.ShowError(err, parent)
 			return
 		}
-		if err := sess.Store.Set(entry.Key, data); err != nil {
-			dialog.ShowError(err, parent)
+		// Truncation guard: only applies to text mode (Auto-on-text or
+		// forced Text) where the visible buffer is a slice of the
+		// original. Saving would silently destroy the tail.
+		mode := format.Selected
+		isTextMode := mode == "Text" || (mode == "Auto" && detected == KindText)
+		if isTextMode && len(entry.Value) > displayValueMax && len(data) < len(entry.Value) {
+			dialog.ShowConfirm(
+				"Replace value?",
+				fmt.Sprintf("You're about to replace a %s value with %s. Anything past the visible buffer will be lost.\n\nUse Export to keep the full content.",
+					humanSize(int64(len(entry.Value))), humanSize(int64(len(data)))),
+				func(yes bool) {
+					if yes {
+						commit(data)
+					}
+				}, parent)
 			return
 		}
-		if err := sess.Refresh(); err != nil {
-			fyne.LogError("refresh failed", err)
-		}
-		if onSaved != nil {
-			onSaved()
-		}
+		commit(data)
 	})
 	save.Importance = widget.HighImportance
+	if current == nil {
+		save.Disable()
+		cancel.Disable()
+	}
 
-	footer := container.NewBorder(nil, nil, layout.NewSpacer(),
+	export := widget.NewButtonWithIcon("Export…", fynetheme.DownloadIcon(), func() {
+		saver := dialog.NewFileSave(func(wc fyne.URIWriteCloser, err error) {
+			if err != nil || wc == nil {
+				return
+			}
+			withProgress(parent, "Exporting…", func() error {
+				_, werr := wc.Write(entry.Value)
+				wc.Close()
+				return werr
+			}, func(err error) {
+				if err != nil {
+					dialog.ShowError(err, parent)
+				}
+			})
+		}, parent)
+		saver.SetFileName(suggestedExportName(entry.Key, entry.Value))
+		saver.Show()
+	})
+
+	footer := container.NewBorder(nil, nil, export,
 		container.NewHBox(cancel, save), nil)
 
 	center := container.NewBorder(
@@ -134,6 +181,8 @@ func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) 
 	be.TextStyle = fyne.TextStyle{Monospace: true}
 	be.Wrapping = fyne.TextWrapBreak
 	be.SetText(displayValue(value))
+	// Editable even when truncated. The outer Save handler warns before
+	// overwriting a much larger original.
 	return be,
 		func() ([]byte, error) { return []byte(be.Text), nil },
 		func() { be.SetText(displayValue(value)) }
@@ -174,15 +223,21 @@ func imageBody(v fyne.ThemeVariant, parent fyne.Window, value []byte, mime strin
 			if err != nil || rc == nil {
 				return
 			}
-			defer rc.Close()
-			data, ioErr := io.ReadAll(rc)
-			if ioErr != nil {
-				dialog.ShowError(ioErr, parent)
-				return
-			}
-			staged = data
-			pending = true
-			refreshPreview()
+			var data []byte
+			withProgress(parent, "Loading file…", func() error {
+				var ioErr error
+				data, ioErr = io.ReadAll(rc)
+				rc.Close()
+				return ioErr
+			}, func(err error) {
+				if err != nil {
+					dialog.ShowError(err, parent)
+					return
+				}
+				staged = data
+				pending = true
+				refreshPreview()
+			})
 		}, parent)
 	})
 
@@ -255,17 +310,78 @@ func hexEditFormat(v []byte) string {
 	return sb.String()
 }
 
-// displayValueMax caps the text body so Fyne's MultiLineEntry doesn't
-// have to lay out megabytes of glyphs. Beyond this users should use
-// Hex or Image mode.
-const displayValueMax = 128 * 1024
+// displayValueMax caps text-mode rendering so Fyne's MultiLineEntry
+// doesn't have to lay out megabytes of glyphs (it isn't virtualised). 16
+// KiB is the largest the widget renders without noticeable lag.
+// Values larger than this are shown read-only with a note pointing at
+// Export for external editing.
+const displayValueMax = 16 * 1024
+
+// suggestedExportName returns a filename derived from the key with the
+// extension that matches the value's content type. Slashes in the key
+// become underscores so the result is a single file. Keys that already
+// look like they have an extension keep it; otherwise we sniff the bytes.
+func suggestedExportName(key, value []byte) string {
+	name := strings.ReplaceAll(string(key), "/", "_")
+	if name == "" {
+		name = "value"
+	}
+	if dot := strings.LastIndexByte(name, '.'); dot > 0 && dot >= len(name)-6 {
+		return name
+	}
+	return name + extensionForBytes(value)
+}
+
+func extensionForBytes(v []byte) string {
+	_, mime := DetectContent(v)
+	switch {
+	case strings.HasPrefix(mime, "image/jpeg"):
+		return ".jpg"
+	case strings.HasPrefix(mime, "image/png"):
+		return ".png"
+	case strings.HasPrefix(mime, "image/gif"):
+		return ".gif"
+	case strings.HasPrefix(mime, "image/webp"):
+		return ".webp"
+	case strings.HasPrefix(mime, "image/"):
+		return ".img"
+	case mime == "application/json":
+		return ".json"
+	case strings.HasPrefix(mime, "text/html"):
+		return ".html"
+	case strings.HasPrefix(mime, "text/xml"), mime == "application/xml":
+		return ".xml"
+	case strings.HasPrefix(mime, "text/"):
+		return ".txt"
+	case strings.HasPrefix(mime, "audio/mpeg"):
+		return ".mp3"
+	case strings.HasPrefix(mime, "audio/wav"), strings.HasPrefix(mime, "audio/x-wav"):
+		return ".wav"
+	case strings.HasPrefix(mime, "audio/"):
+		return ".audio"
+	case strings.HasPrefix(mime, "video/mp4"):
+		return ".mp4"
+	case strings.HasPrefix(mime, "video/"):
+		return ".video"
+	case mime == "application/pdf":
+		return ".pdf"
+	case mime == "application/zip":
+		return ".zip"
+	case mime == "application/gzip":
+		return ".gz"
+	default:
+		return ".bin"
+	}
+}
 
 // displayValue returns the value as a string, pretty-printed if it's JSON.
-// Huge values are truncated up-front to keep the text widget responsive.
+// Values larger than displayValueMax are truncated so the editor stays
+// responsive.
 func displayValue(v []byte) string {
 	if len(v) > displayValueMax {
 		return string(v[:displayValueMax]) +
-			fmt.Sprintf("\n\n... (truncated; original was %d bytes — use Hex mode to inspect bytes)", len(v))
+			fmt.Sprintf("\n\n... (showing first %s of %s — use Export to save the whole value to a file)",
+				humanSize(int64(displayValueMax)), humanSize(int64(len(v))))
 	}
 	var pretty bytes.Buffer
 	if json.Indent(&pretty, v, "", "  ") == nil && pretty.Len() > 0 {

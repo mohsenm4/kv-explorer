@@ -48,16 +48,10 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 			if err != nil || uri == nil {
 				return
 			}
-			p := uri.Path()
-			path.SetText(p)
-			if detected, ok := kvstore.DetectEngine(p); ok {
-				for _, e := range engineChoices {
-					if e.kind == detected && engine.Selected != e.label {
-						engine.SetSelected(e.label)
-						break
-					}
-				}
-			}
+			path.SetText(uri.Path())
+			// Engine mismatch is caught by the confirm step below; we
+			// deliberately don't auto-switch the radio so the user's
+			// choice stays explicit.
 		}, parent)
 	})
 

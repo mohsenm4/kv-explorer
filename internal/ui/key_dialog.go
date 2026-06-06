@@ -99,22 +99,62 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 			if err != nil || rc == nil {
 				return
 			}
-			defer rc.Close()
-			data, ioErr := io.ReadAll(rc)
-			if ioErr != nil {
-				dialog.ShowError(ioErr, parent)
-				return
-			}
-			staged = data
-			_, mime := DetectContent(data)
-			fileInfo.SetText(fmt.Sprintf("Loaded: %s · %s", mime, humanSize(int64(len(data)))))
-			clearFile.Show()
-			valueEntry.Disable()
-			sizeReadout.SetText(fmt.Sprintf("%d B", len(data)))
+			name := rc.URI().Name()
+			var data []byte
+			withProgress(parent, "Loading file…", func() error {
+				var ioErr error
+				data, ioErr = io.ReadAll(rc)
+				rc.Close()
+				return ioErr
+			}, func(err error) {
+				if err != nil {
+					dialog.ShowError(err, parent)
+					return
+				}
+				staged = data
+				_, mime := DetectContent(data)
+				fileInfo.SetText(fmt.Sprintf("Loaded %s · %s · %s", name, mime, humanSize(int64(len(data)))))
+				clearFile.Show()
+				valueEntry.Disable()
+				sizeReadout.SetText(fmt.Sprintf("%d B", len(data)))
+			})
 		}, parent)
 	})
 
-	fileRow := container.NewBorder(nil, nil, useFile, clearFile, fileInfo)
+	exportBtn := widget.NewButtonWithIcon("Export…", fynetheme.DownloadIcon(), func() {
+		data := staged
+		if data == nil {
+			data = []byte(valueEntry.Text)
+		}
+		if len(data) == 0 {
+			return
+		}
+		saver := dialog.NewFileSave(func(wc fyne.URIWriteCloser, err error) {
+			if err != nil || wc == nil {
+				return
+			}
+			withProgress(parent, "Exporting…", func() error {
+				_, werr := wc.Write(data)
+				wc.Close()
+				return werr
+			}, func(err error) {
+				if err != nil {
+					dialog.ShowError(err, parent)
+				}
+			})
+		}, parent)
+		nameKey := oldKey
+		if nameKey == nil {
+			nameKey = []byte(keyEntry.Text)
+		}
+		if len(nameKey) == 0 {
+			nameKey = []byte("value")
+		}
+		saver.SetFileName(suggestedExportName(nameKey, data))
+		saver.Show()
+	})
+
+	fileRow := container.NewBorder(nil, nil, useFile, container.NewHBox(exportBtn, clearFile), fileInfo)
 
 	if autoStage {
 		_, mime := DetectContent(staged)
@@ -166,23 +206,25 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 		if newValue == nil {
 			newValue = []byte(valueEntry.Text)
 		}
-		if err := sess.Store.Set(key, newValue); err != nil {
-			dialog.ShowError(err, parent)
-			return
-		}
-		if editing && string(key) != string(oldKey) {
-			// Key was renamed — drop the old one.
-			if err := sess.Store.Delete(oldKey); err != nil {
+		withProgress(parent, "Saving…", func() error {
+			if err := sess.Store.Set(key, newValue); err != nil {
+				return err
+			}
+			if editing && string(key) != string(oldKey) {
+				if err := sess.Store.Delete(oldKey); err != nil {
+					return err
+				}
+			}
+			return sess.Refresh()
+		}, func(err error) {
+			if err != nil {
 				dialog.ShowError(err, parent)
 				return
 			}
-		}
-		if err := sess.Refresh(); err != nil {
-			fyne.LogError("refresh failed", err)
-		}
-		if onSaved != nil {
-			onSaved()
-		}
+			if onSaved != nil {
+				onSaved()
+			}
+		})
 	}, parent)
 	d.Resize(fyne.NewSize(560, 460))
 	d.SetConfirmImportance(widget.HighImportance)

@@ -1,6 +1,55 @@
 package ui
 
-import "testing"
+import (
+	"archive/zip"
+	"bytes"
+	"testing"
+)
+
+func makeZip(t *testing.T, entries map[string]string) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	for name, body := range entries {
+		f, err := w.Create(name)
+		if err != nil {
+			t.Fatalf("zip create %s: %v", name, err)
+		}
+		if _, err := f.Write([]byte(body)); err != nil {
+			t.Fatalf("zip write %s: %v", name, err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatalf("zip close: %v", err)
+	}
+	return buf.Bytes()
+}
+
+func TestDetectContent_ZipContainers(t *testing.T) {
+	cases := []struct {
+		name    string
+		entries map[string]string
+		want    string
+	}{
+		{"xlsx", map[string]string{"[Content_Types].xml": "<x/>", "xl/workbook.xml": "<x/>"},
+			"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+		{"docx", map[string]string{"[Content_Types].xml": "<x/>", "word/document.xml": "<x/>"},
+			"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+		{"pptx", map[string]string{"[Content_Types].xml": "<x/>", "ppt/presentation.xml": "<x/>"},
+			"application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+		{"epub", map[string]string{"mimetype": "application/epub+zip", "OEBPS/content.opf": "<x/>"},
+			"application/epub+zip"},
+		{"plain zip", map[string]string{"readme.txt": "hi"}, "application/zip"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, mime := DetectContent(makeZip(t, c.entries))
+			if mime != c.want {
+				t.Errorf("DetectContent(%s) mime = %q, want %q", c.name, mime, c.want)
+			}
+		})
+	}
+}
 
 func TestDetectContent_Text(t *testing.T) {
 	cases := [][]byte{
