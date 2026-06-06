@@ -94,7 +94,7 @@ Settings live at `~/.kvexplorer/config.json`. Logs live at
 - `F2` — Edit selected key
 - `F5` — Refresh
 - `Cmd/Ctrl + ,` — Settings
-- `Cmd/Ctrl + Tab` — Cycle tabs
+- `Ctrl + Tab` — Cycle tabs (Cmd+Tab is OS-reserved on macOS)
 - `Esc` — Close dialog / clear filter / cancel edit
 
 Full visual design (colors, components, screen layouts) is in

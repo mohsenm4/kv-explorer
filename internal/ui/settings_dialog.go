@@ -17,17 +17,23 @@ type SettingsHandlers struct {
 // showSettings opens the tabbed Settings dialog.
 func showSettings(parent fyne.Window, current string, handlers SettingsHandlers) {
 	tabs := container.NewAppTabs(
-		container.NewTabItem("Appearance", appearancePane(current, handlers)),
-		container.NewTabItem("General", generalPane()),
-		container.NewTabItem("Editor", editorPane()),
-		container.NewTabItem("Shortcuts", shortcutsPane()),
-		container.NewTabItem("About", aboutPane()),
+		container.NewTabItem("Appearance", pane(appearancePane(current, handlers))),
+		container.NewTabItem("General", pane(generalPane())),
+		container.NewTabItem("Editor", pane(editorPane())),
+		container.NewTabItem("Shortcuts", pane(shortcutsPane())),
+		container.NewTabItem("About", pane(aboutPane())),
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
 
 	d := dialog.NewCustom("Settings", "Close", tabs, parent)
-	d.Resize(fyne.NewSize(640, 460))
+	d.Resize(fyne.NewSize(720, 480))
 	d.Show()
+}
+
+// pane wraps a settings tab body so its content doesn't touch the
+// vertical tab strip and gets breathing room on every side.
+func pane(content fyne.CanvasObject) fyne.CanvasObject {
+	return container.NewPadded(container.NewPadded(content))
 }
 
 func appearancePane(current string, h SettingsHandlers) fyne.CanvasObject {
