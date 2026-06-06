@@ -130,7 +130,7 @@ func shortcutsPane() fyne.CanvasObject {
 		{"Edit selected key", "F2"},
 		{"Refresh", "F5"},
 		{"Open Settings", "Ctrl/Cmd + ,"},
-		{"Cycle tabs", "Ctrl/Cmd + Tab"},
+		{"Cycle tabs", "Ctrl + Tab"},
 		{"Close dialog / clear filter / cancel edit", "Esc"},
 	}
 	list := container.NewVBox()

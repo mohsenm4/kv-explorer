@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fmt"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -43,8 +45,18 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 
 	pick := widget.NewButtonWithIcon("", fynetheme.FolderOpenIcon(), func() {
 		dialog.ShowFolderOpen(func(uri fyne.ListableURI, err error) {
-			if err == nil && uri != nil {
-				path.SetText(uri.Path())
+			if err != nil || uri == nil {
+				return
+			}
+			p := uri.Path()
+			path.SetText(p)
+			if detected, ok := kvstore.DetectEngine(p); ok {
+				for _, e := range engineChoices {
+					if e.kind == detected && engine.Selected != e.label {
+						engine.SetSelected(e.label)
+						break
+					}
+				}
 			}
 		}, parent)
 	})
@@ -78,16 +90,40 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 				break
 			}
 		}
-		onConfirm(OpenRequest{
+		req := OpenRequest{
 			Engine:   kind,
 			Path:     path.Text,
 			NewTab:   newTab.Checked,
 			ReadOnly: readOnly.Checked,
-		})
+		}
+		// Safety net for typed paths: if the folder looks like a
+		// different engine, ask before trying to open with the wrong one.
+		if detected, ok := kvstore.DetectEngine(path.Text); ok && detected != kind {
+			dialog.ShowConfirm(
+				"Engine mismatch",
+				fmt.Sprintf("This folder looks like a %s database but you chose %s.\n\nOpen anyway?",
+					engineLabelFor(detected), engine.Selected),
+				func(yes bool) {
+					if yes {
+						onConfirm(req)
+					}
+				}, parent)
+			return
+		}
+		onConfirm(req)
 	}, parent)
 	d.Resize(fyne.NewSize(520, 380))
 	d.SetConfirmImportance(widget.HighImportance)
 	d.Show()
+}
+
+func engineLabelFor(k kvstore.EngineKind) string {
+	for _, e := range engineChoices {
+		if e.kind == k {
+			return e.label
+		}
+	}
+	return string(k)
 }
 
 func sectionLabel(text string) fyne.CanvasObject {

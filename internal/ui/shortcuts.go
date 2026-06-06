@@ -23,7 +23,9 @@ func registerShortcuts(w fyne.Window, s *AppState) {
 		{shortcut(fyne.KeyF5, 0), s.FireRefresh},
 		{shortcut(fyne.KeyDelete, 0), s.FireDeleteKey},
 		{shortcut(fyne.KeyBackspace, 0), s.FireDeleteKey},
-		{shortcut(fyne.KeyTab, fyne.KeyModifierShortcutDefault), s.CycleTab},
+		// Cmd+Tab is owned by the OS on macOS, so cycle on Ctrl+Tab
+		// everywhere instead. Settings → Shortcuts pane mirrors this.
+		{shortcut(fyne.KeyTab, fyne.KeyModifierControl), s.CycleTab},
 	}
 
 	for _, b := range bindings {

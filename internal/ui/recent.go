@@ -56,7 +56,7 @@ func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry, onPick
 	chip := engineChip(e.engine, v)
 	chipBox := container.New(layout.NewCustomPaddedLayout(0, 0, 0, 12), chip)
 
-	path := canvas.NewText(e.path, fg)
+	path := canvas.NewText(middleTruncate(e.path, 48), fg)
 	path.TextSize = 13
 	path.TextStyle = fyne.TextStyle{Monospace: true}
 
@@ -71,6 +71,20 @@ func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry, onPick
 			onPick(e)
 		}
 	})
+}
+
+// middleTruncate shortens a long path by collapsing its middle to "…"
+// so both the prefix (e.g. "~/Desktop") and the leaf (db name) stay
+// visible. n is the target visible character count.
+func middleTruncate(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	if n < 5 {
+		return s[:n]
+	}
+	half := (n - 1) / 2
+	return s[:half] + "…" + s[len(s)-(n-1-half):]
 }
 
 func relTime(t time.Time) string {
