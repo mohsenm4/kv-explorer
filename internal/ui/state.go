@@ -22,6 +22,7 @@ type AppState struct {
 	active    int
 	themePref string
 	variant   fyne.ThemeVariant
+	version   string
 
 	// Page callbacks (filled by mainPage on render, cleared on welcome).
 	page pageHandlers
@@ -59,6 +60,9 @@ func NewAppState(a fyne.App, w fyne.Window) *AppState {
 // SetNotify wires the render callback. Mutations call s.notify() to
 // trigger a re-render without knowing what's on screen.
 func (s *AppState) SetNotify(fn func()) { s.notify = fn }
+
+func (s *AppState) SetVersion(v string) { s.version = v }
+func (s *AppState) Version() string     { return s.version }
 
 func (s *AppState) Notify() {
 	if s.notify != nil {

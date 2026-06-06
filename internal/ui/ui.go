@@ -8,11 +8,12 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-func Run() {
+func Run(version string) {
 	a := fyneapp.NewWithID("com.kvexplorer.app")
 	w := a.NewWindow("KV-Explorer")
 
 	state := NewAppState(a, w)
+	state.SetVersion(version)
 	state.ApplyTheme()
 	state.ApplyInitialWindowSize()
 
