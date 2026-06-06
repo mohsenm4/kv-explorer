@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
 
@@ -11,15 +9,27 @@ import (
 )
 
 // keyTable renders the central table of key / value preview / size. It
-// holds only key metadata in memory and fetches values on demand from the
-// store, so a million-key database doesn't have to fit in RAM.
+// caches the filtered slice between cell renders so applyFilter doesn't
+// run 90+ times per refresh.
 // onSelect fires with the row's key + freshly-fetched value.
 func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entry)) *widget.Table {
 	headers := []string{"Key", "Value preview", "Size"}
 
+	type cacheKey struct {
+		n int
+		q string
+	}
+	var cached []app.KeyMeta
+	var ck cacheKey
+
 	read := func() []app.KeyMeta {
 		keys, _ := sess.Keys()
-		return applyFilter(keys, *filter)
+		cur := cacheKey{len(keys), filter.Query}
+		if cached == nil || cur != ck {
+			cached = applyFilter(keys, *filter)
+			ck = cur
+		}
+		return cached
 	}
 
 	table := widget.NewTableWithHeaders(
@@ -34,21 +44,17 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 			l := c.(*widget.Label)
 			l.TextStyle = fyne.TextStyle{Monospace: true}
 			l.Alignment = fyne.TextAlignLeading
-			keys := read()
-			if id.Row < 0 || id.Row >= len(keys) {
+			rows := read()
+			if id.Row < 0 || id.Row >= len(rows) {
 				l.SetText("")
 				return
 			}
-			meta := keys[id.Row]
+			meta := rows[id.Row]
 			switch id.Col {
 			case 0:
 				l.SetText(meta.Key)
 			case 1:
-				if v, err := sess.Value([]byte(meta.Key)); err == nil {
-					l.SetText(previewValue(v))
-				} else {
-					l.SetText("")
-				}
+				l.SetText(meta.Preview)
 			case 2:
 				l.Alignment = fyne.TextAlignTrailing
 				l.SetText(humanSize(int64(meta.Size)))
@@ -81,11 +87,11 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 		if onSelect == nil {
 			return
 		}
-		keys := read()
-		if id.Row < 0 || id.Row >= len(keys) {
+		rows := read()
+		if id.Row < 0 || id.Row >= len(rows) {
 			return
 		}
-		k := []byte(keys[id.Row].Key)
+		k := []byte(rows[id.Row].Key)
 		v, err := sess.Value(k)
 		if err != nil {
 			return
@@ -94,25 +100,4 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 	}
 
 	return table
-}
-
-// previewValue trims a value down to a single-line preview for the table.
-// Non-text content is summarised by MIME type + size so the row doesn't
-// fill with garbled bytes.
-func previewValue(v []byte) string {
-	kind, mime := DetectContent(v)
-	if kind == KindImage || kind == KindBinary {
-		return fmt.Sprintf("[%s · %s]", mime, humanSize(int64(len(v))))
-	}
-	const max = 120
-	s := string(v)
-	for i := 0; i < len(s); i++ {
-		if s[i] == '\n' || s[i] == '\r' || s[i] == '\t' {
-			s = s[:i] + " " + s[i+1:]
-		}
-	}
-	if len(s) > max {
-		return s[:max] + "…"
-	}
-	return s
 }

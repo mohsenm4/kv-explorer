@@ -227,8 +227,19 @@ func hexBody(v fyne.ThemeVariant, value []byte, mime string) (fyne.CanvasObject,
 	return body, current, resetFn
 }
 
+// hexEditFormatMax caps how many bytes the hex editor renders so huge
+// values don't choke the text widget. Edits stay valid as long as the
+// user keeps total bytes ≤ this many.
+const hexEditFormatMax = 4096
+
 func hexEditFormat(v []byte) string {
+	truncated := false
+	if len(v) > hexEditFormatMax {
+		v = v[:hexEditFormatMax]
+		truncated = true
+	}
 	var sb strings.Builder
+	sb.Grow(len(v) * 3)
 	for i, b := range v {
 		sb.WriteString(fmt.Sprintf("%02x", b))
 		switch {
@@ -238,11 +249,24 @@ func hexEditFormat(v []byte) string {
 			sb.WriteByte(' ')
 		}
 	}
+	if truncated {
+		sb.WriteString(fmt.Sprintf("\n... (showing first %d bytes; edits beyond this would be lost)", hexEditFormatMax))
+	}
 	return sb.String()
 }
 
+// displayValueMax caps the text body so Fyne's MultiLineEntry doesn't
+// have to lay out megabytes of glyphs. Beyond this users should use
+// Hex or Image mode.
+const displayValueMax = 128 * 1024
+
 // displayValue returns the value as a string, pretty-printed if it's JSON.
+// Huge values are truncated up-front to keep the text widget responsive.
 func displayValue(v []byte) string {
+	if len(v) > displayValueMax {
+		return string(v[:displayValueMax]) +
+			fmt.Sprintf("\n\n... (truncated; original was %d bytes — use Hex mode to inspect bytes)", len(v))
+	}
 	var pretty bytes.Buffer
 	if json.Indent(&pretty, v, "", "  ") == nil && pretty.Len() > 0 {
 		return pretty.String()

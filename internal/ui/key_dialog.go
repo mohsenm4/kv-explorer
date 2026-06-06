@@ -4,11 +4,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
@@ -52,14 +54,73 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	valueEntry := widget.NewMultiLineEntry()
 	valueEntry.TextStyle = fyne.TextStyle{Monospace: true}
 	valueEntry.Wrapping = fyne.TextWrapBreak
+	valueEntry.SetPlaceHolder("Type a value or click \"Use file…\" to upload one")
+
+	// File-upload state: when non-nil, the dialog will write these bytes
+	// instead of the value entry's text. For Edit on a binary value we
+	// pre-stage the existing bytes so we never try to render megabytes of
+	// garbled text inside MultiLineEntry.
+	var staged []byte
+	autoStage := false
 	if editing {
-		valueEntry.SetText(displayValue(oldValue))
+		if kind, _ := DetectContent(oldValue); kind != KindText {
+			staged = oldValue
+			autoStage = true
+		} else {
+			valueEntry.SetText(displayValue(oldValue))
+		}
 	}
 
-	sizeReadout := widget.NewLabel(fmt.Sprintf("%d B", len(valueEntry.Text)))
+	initialSize := len(valueEntry.Text)
+	if autoStage {
+		initialSize = len(staged)
+	}
+	sizeReadout := widget.NewLabel(fmt.Sprintf("%d B", initialSize))
 	sizeReadout.Importance = widget.LowImportance
 	valueEntry.OnChanged = func(s string) {
 		sizeReadout.SetText(fmt.Sprintf("%d B", len(s)))
+	}
+
+	fileInfo := widget.NewLabel("")
+	fileInfo.Importance = widget.LowImportance
+
+	clearFile := widget.NewButton("Clear", nil)
+	clearFile.Hide()
+	clearFile.OnTapped = func() {
+		staged = nil
+		fileInfo.SetText("")
+		clearFile.Hide()
+		valueEntry.Enable()
+		sizeReadout.SetText(fmt.Sprintf("%d B", len(valueEntry.Text)))
+	}
+
+	useFile := widget.NewButtonWithIcon("Use file…", fynetheme.UploadIcon(), func() {
+		dialog.ShowFileOpen(func(rc fyne.URIReadCloser, err error) {
+			if err != nil || rc == nil {
+				return
+			}
+			defer rc.Close()
+			data, ioErr := io.ReadAll(rc)
+			if ioErr != nil {
+				dialog.ShowError(ioErr, parent)
+				return
+			}
+			staged = data
+			_, mime := DetectContent(data)
+			fileInfo.SetText(fmt.Sprintf("Loaded: %s · %s", mime, humanSize(int64(len(data)))))
+			clearFile.Show()
+			valueEntry.Disable()
+			sizeReadout.SetText(fmt.Sprintf("%d B", len(data)))
+		}, parent)
+	})
+
+	fileRow := container.NewBorder(nil, nil, useFile, clearFile, fileInfo)
+
+	if autoStage {
+		_, mime := DetectContent(staged)
+		fileInfo.SetText(fmt.Sprintf("Current value: %s · %s", mime, humanSize(int64(len(staged)))))
+		clearFile.Show()
+		valueEntry.Disable()
 	}
 
 	content := container.NewVBox(
@@ -69,6 +130,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 		gap(6),
 		sectionLabel("Value"),
 		valueEntry,
+		fileRow,
 		sizeReadout,
 	)
 
@@ -100,7 +162,10 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 			}
 		}
 
-		newValue := []byte(valueEntry.Text)
+		newValue := staged
+		if newValue == nil {
+			newValue = []byte(valueEntry.Text)
+		}
 		if err := sess.Store.Set(key, newValue); err != nil {
 			dialog.ShowError(err, parent)
 			return
