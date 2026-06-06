@@ -1,0 +1,95 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: linux
+            runner: ubuntu-latest
+            ext: ""
+            archive: tar.gz
+          - os: macos
+            runner: macos-latest
+            ext: ""
+            archive: tar.gz
+          - os: windows
+            runner: windows-latest
+            ext: ".exe"
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+
+      - name: Install Linux GUI deps
+        if: matrix.os == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
+
+      - name: Build
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          go build -ldflags "-s -w -X main.version=${VERSION}" \
+            -o "kvexplorer${{ matrix.ext }}" ./cmd/kvexplorer
+
+      - name: Package
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          NAME="kvexplorer-${VERSION}-${{ matrix.os }}"
+          mkdir -p dist
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            7z a "dist/${NAME}.zip" "kvexplorer${{ matrix.ext }}" README.md
+          else
+            tar czf "dist/${NAME}.tar.gz" "kvexplorer${{ matrix.ext }}" README.md
+          fi
+          ls -la dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kvexplorer-${{ matrix.os }}
+          path: dist/*
+
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum * > checksums.txt
+          cat checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

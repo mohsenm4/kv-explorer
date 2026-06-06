@@ -3,7 +3,8 @@
 *.dll
 *.so
 *.dylib
-kvexplorer
+/kvexplorer
+/copykv
 /bin/
 /build/
 /dist/
@@ -42,3 +43,4 @@ logs/
 # Local sandbox / scratch directories
 Untitled/
 scratch/
+m.json
