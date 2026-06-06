@@ -39,16 +39,20 @@ func showDeleteKey(parent fyne.Window, sess *app.Session, key []byte, onDeleted 
 		if !ok {
 			return
 		}
-		if err := sess.Store.Delete(key); err != nil {
-			dialog.ShowError(err, parent)
-			return
-		}
-		if err := sess.Refresh(); err != nil {
-			fyne.LogError("refresh failed", err)
-		}
-		if onDeleted != nil {
-			onDeleted()
-		}
+		withProgress(parent, "Deleting…", func() error {
+			if err := sess.Store.Delete(key); err != nil {
+				return err
+			}
+			return sess.Refresh()
+		}, func(err error) {
+			if err != nil {
+				dialog.ShowError(err, parent)
+				return
+			}
+			if onDeleted != nil {
+				onDeleted()
+			}
+		})
 	}, parent)
 	d.Resize(fyne.NewSize(480, 240))
 	d.SetConfirmImportance(widget.DangerImportance)

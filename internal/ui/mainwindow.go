@@ -61,10 +61,13 @@ func mainPage(s *AppState) fyne.CanvasObject {
 	}
 
 	refreshAll := func() {
-		_ = sess.Refresh()
-		table.Refresh()
-		rebuildTree()
-		clearSelection()
+		withProgress(w, "Refreshing…", func() error {
+			return sess.Refresh()
+		}, func(err error) {
+			table.Refresh()
+			rebuildTree()
+			clearSelection()
+		})
 	}
 
 	table = keyTable(sess, filter, loadEditorFor)

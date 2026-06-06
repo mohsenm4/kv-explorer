@@ -105,21 +105,27 @@ func (s *AppState) Active() *app.Session {
 }
 
 func (s *AppState) OpenSession(req OpenRequest) {
-	sess, err := app.OpenSession(req.Engine, req.Path, kvstore.OpenOptions{ReadOnly: req.ReadOnly})
-	if err != nil {
-		dialog.ShowError(err, s.w)
-		return
-	}
-	if !req.NewTab && len(s.sessions) > 0 {
-		_ = s.sessions[s.active].Close()
-		s.sessions[s.active] = sess
-	} else {
-		s.sessions = append(s.sessions, sess)
-		s.active = len(s.sessions) - 1
-	}
-	s.cfg.AddRecent(req.Path, string(req.Engine))
-	s.Persist()
-	s.Notify()
+	var sess *app.Session
+	withProgress(s.w, "Opening database…", func() error {
+		var err error
+		sess, err = app.OpenSession(req.Engine, req.Path, kvstore.OpenOptions{ReadOnly: req.ReadOnly})
+		return err
+	}, func(err error) {
+		if err != nil {
+			dialog.ShowError(err, s.w)
+			return
+		}
+		if !req.NewTab && len(s.sessions) > 0 {
+			_ = s.sessions[s.active].Close()
+			s.sessions[s.active] = sess
+		} else {
+			s.sessions = append(s.sessions, sess)
+			s.active = len(s.sessions) - 1
+		}
+		s.cfg.AddRecent(req.Path, string(req.Engine))
+		s.Persist()
+		s.Notify()
+	})
 }
 
 func (s *AppState) CloseAt(i int) {
