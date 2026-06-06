@@ -4,6 +4,7 @@
 *.so
 *.dylib
 /kvexplorer
+/copykv
 /bin/
 /build/
 /dist/
