@@ -13,9 +13,12 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle func(), onOpen func(OpenRequest), recents []recentEntry) fyne.CanvasObject {
+func welcomePage(s *AppState) fyne.CanvasObject {
+	s.ClearPageHandlers()
+
+	a := s.a
+	v := s.Variant()
 	th := a.Settings().Theme()
-	v := *variant
 
 	fg := th.Color(fynetheme.ColorNameForeground, v)
 	muted := th.Color(fynetheme.ColorNamePlaceHolder, v)
@@ -33,7 +36,7 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 	tagline.Alignment = fyne.TextAlignCenter
 
 	open := widget.NewButtonWithIcon("Open Database…", fynetheme.FolderOpenIcon(), func() {
-		showOpenDatabase(w, onOpen)
+		s.ShowOpenDialog()
 	})
 	open.Importance = widget.HighImportance
 
@@ -44,11 +47,12 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 
 	actions := container.NewHBox(layout.NewSpacer(), open, openRecent, layout.NewSpacer())
 
+	recents := recentsFromConfig(s.Recents())
 	if len(recents) == 0 {
 		recents = fakeRecents()
 	}
 	recentBlock := buildRecentBlock(v, fg, muted, recents, func(r recentEntry) {
-		onOpen(OpenRequest{Engine: kvstore.EngineKind(r.engine), Path: r.path, NewTab: false})
+		s.OpenSession(OpenRequest{Engine: kvstore.EngineKind(r.engine), Path: r.path})
 	})
 
 	heroStack := container.NewVBox(
@@ -63,7 +67,7 @@ func welcomePage(a fyne.App, w fyne.Window, variant *fyne.ThemeVariant, onToggle
 	heroSized := container.NewGridWrap(fyne.NewSize(520, heroStack.MinSize().Height), heroStack)
 	center := container.NewCenter(heroSized)
 
-	return container.NewBorder(nil, welcomeStatusBar(v, onToggle), nil, nil, center)
+	return container.NewBorder(nil, welcomeStatusBar(v, s.ToggleTheme), nil, nil, center)
 }
 
 func heroIcon(primary color.Color) fyne.CanvasObject {

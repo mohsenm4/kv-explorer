@@ -9,14 +9,16 @@ import (
 // mainMenu builds the File/Edit/View/Help menu. On macOS Fyne renders this
 // in the system menu bar (top of screen); on Linux/Windows it sits inside
 // the window as a strip under the title bar.
-func mainMenu(w fyne.Window, openDialog, closeSession, toggleTheme, openSettings func()) *fyne.MainMenu {
-	openItem := fyne.NewMenuItem("Open…", openDialog)
+func mainMenu(s *AppState) *fyne.MainMenu {
+	w := s.w
+
+	openItem := fyne.NewMenuItem("Open…", s.ShowOpenDialog)
 	openItem.Shortcut = shortcut(fyne.KeyO, fyne.KeyModifierShortcutDefault)
 
-	closeItem := fyne.NewMenuItem("Close", closeSession)
+	closeItem := fyne.NewMenuItem("Close", s.CloseActive)
 	closeItem.Shortcut = shortcut(fyne.KeyW, fyne.KeyModifierShortcutDefault)
 
-	settingsItem := fyne.NewMenuItem("Settings…", openSettings)
+	settingsItem := fyne.NewMenuItem("Settings…", s.ShowSettings)
 	settingsItem.Shortcut = shortcut(fyne.KeyComma, fyne.KeyModifierShortcutDefault)
 
 	file := fyne.NewMenu("File",
@@ -32,7 +34,7 @@ func mainMenu(w fyne.Window, openDialog, closeSession, toggleTheme, openSettings
 	)
 	view := fyne.NewMenu("View",
 		disabledItem("Refresh"),
-		fyne.NewMenuItem("Toggle Theme", toggleTheme),
+		fyne.NewMenuItem("Toggle Theme", s.ToggleTheme),
 	)
 	help := fyne.NewMenu("Help",
 		fyne.NewMenuItem("About KV-Explorer", func() {

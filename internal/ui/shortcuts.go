@@ -5,10 +5,10 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
-// registerShortcuts wires canvas-level shortcuts to the cross-cutting
-// handlers. Each handler is nil-checked so shortcuts no-op when there's
-// no session.
-func registerShortcuts(w fyne.Window, h *appHandlers) {
+// registerShortcuts wires canvas-level shortcuts to AppState. Per-page
+// actions (add/edit/delete/refresh/focus) flow through Fire* methods so
+// they no-op when there's no session.
+func registerShortcuts(w fyne.Window, s *AppState) {
 	c := w.Canvas()
 
 	type binding struct {
@@ -17,41 +17,13 @@ func registerShortcuts(w fyne.Window, h *appHandlers) {
 	}
 
 	bindings := []binding{
-		{shortcut(fyne.KeyN, fyne.KeyModifierShortcutDefault), func() {
-			if h.addKey != nil {
-				h.addKey()
-			}
-		}},
-		{shortcut(fyne.KeyF, fyne.KeyModifierShortcutDefault), func() {
-			if h.focusFilter != nil {
-				h.focusFilter()
-			}
-		}},
-		{shortcut(fyne.KeyF2, 0), func() {
-			if h.editKey != nil {
-				h.editKey()
-			}
-		}},
-		{shortcut(fyne.KeyF5, 0), func() {
-			if h.refresh != nil {
-				h.refresh()
-			}
-		}},
-		{shortcut(fyne.KeyDelete, 0), func() {
-			if h.deleteKey != nil {
-				h.deleteKey()
-			}
-		}},
-		{shortcut(fyne.KeyBackspace, 0), func() {
-			if h.deleteKey != nil {
-				h.deleteKey()
-			}
-		}},
-		{shortcut(fyne.KeyTab, fyne.KeyModifierShortcutDefault), func() {
-			if h.cycleTab != nil {
-				h.cycleTab()
-			}
-		}},
+		{shortcut(fyne.KeyN, fyne.KeyModifierShortcutDefault), s.FireAddKey},
+		{shortcut(fyne.KeyF, fyne.KeyModifierShortcutDefault), s.FireFocusFilter},
+		{shortcut(fyne.KeyF2, 0), s.FireEditKey},
+		{shortcut(fyne.KeyF5, 0), s.FireRefresh},
+		{shortcut(fyne.KeyDelete, 0), s.FireDeleteKey},
+		{shortcut(fyne.KeyBackspace, 0), s.FireDeleteKey},
+		{shortcut(fyne.KeyTab, fyne.KeyModifierShortcutDefault), s.CycleTab},
 	}
 
 	for _, b := range bindings {

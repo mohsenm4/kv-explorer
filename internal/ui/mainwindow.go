@@ -11,9 +11,10 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-func mainPage(a fyne.App, w fyne.Window, bar TabBar, variant *fyne.ThemeVariant, onOpen, onClose, onToggle, onSettings func(), handlers *appHandlers) fyne.CanvasObject {
-	v := *variant
-	sess := bar.Sessions[bar.Active]
+func mainPage(s *AppState) fyne.CanvasObject {
+	v := s.Variant()
+	w := s.w
+	sess := s.Active()
 
 	accent := canvas.NewRectangle(apptheme.DBAccent(string(sess.Engine), v))
 	accent.SetMinSize(fyne.NewSize(0, 3))
@@ -74,8 +75,8 @@ func mainPage(a fyne.App, w fyne.Window, bar TabBar, variant *fyne.ThemeVariant,
 	})
 
 	actions := ToolbarActions{
-		OnOpen:  onOpen,
-		OnClose: onClose,
+		OnOpen:  s.ShowOpenDialog,
+		OnClose: s.CloseActive,
 		OnAdd: func() {
 			showAddKey(w, sess, refreshAll)
 		},
@@ -92,18 +93,27 @@ func mainPage(a fyne.App, w fyne.Window, bar TabBar, variant *fyne.ThemeVariant,
 			showDeleteKey(w, sess, current.Key, refreshAll)
 		},
 		OnRefresh:  refreshAll,
-		OnSettings: onSettings,
+		OnSettings: s.ShowSettings,
 	}
 	toolbar = buildToolbar(actions)
 	toolbar.editBtn.Disable()
 	toolbar.deleteBtn.Disable()
 
-	handlers.addKey = actions.OnAdd
-	handlers.editKey = actions.OnEdit
-	handlers.deleteKey = actions.OnDelete
-	handlers.refresh = refreshAll
-	handlers.focusFilter = func() { w.Canvas().Focus(filterEntry) }
+	s.SetPageHandlers(pageHandlers{
+		addKey:      actions.OnAdd,
+		editKey:     actions.OnEdit,
+		deleteKey:   actions.OnDelete,
+		refresh:     refreshAll,
+		focusFilter: func() { w.Canvas().Focus(filterEntry) },
+	})
 
+	bar := TabBar{
+		Sessions: s.Sessions(),
+		Active:   s.ActiveIdx(),
+		OnSelect: s.SelectTab,
+		OnClose:  s.CloseAt,
+		OnAdd:    s.ShowOpenDialogNewTab,
+	}
 	tabs := tabStrip(v, bar)
 
 	tableWithFilter := container.NewBorder(container.NewPadded(filterUI), nil, nil, nil, table)
@@ -113,7 +123,7 @@ func mainPage(a fyne.App, w fyne.Window, bar TabBar, variant *fyne.ThemeVariant,
 	split := container.NewHSplit(treeBox, center)
 	split.Offset = 0.22
 
-	status := mainStatusBar(v, sess, onToggle)
+	status := mainStatusBar(v, sess, s.ToggleTheme)
 
 	sep := canvas.NewRectangle(themeColor(v, fynetheme.ColorNameSeparator))
 	sep.SetMinSize(fyne.NewSize(0, 1))
