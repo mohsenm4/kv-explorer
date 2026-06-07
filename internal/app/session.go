@@ -27,7 +27,11 @@ type Session struct {
 	SizeBytes int64
 
 	keys []KeyMeta
+	rev  int
 }
+
+// Rev bumps on every reload; UI caches keyed by Rev() detect mutations even when key count stays the same (e.g. rename or value edit).
+func (s *Session) Rev() int { return s.rev }
 
 func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions) (*Session, error) {
 	store, err := OpenStore(kind, path, opts)
@@ -78,6 +82,7 @@ func (s *Session) reloadKeys() ([]KeyMeta, error) {
 	}
 	s.keys = out
 	s.KeyCount = len(out)
+	s.rev++
 	return out, nil
 }
 

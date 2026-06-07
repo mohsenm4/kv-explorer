@@ -15,7 +15,7 @@ type SettingsHandlers struct {
 	OnLanguage func(string) // BCP-47 tag, or "" for system default
 }
 
-func showSettings(parent fyne.Window, currentTheme, currentLang string, handlers SettingsHandlers) {
+func showSettings(parent fyne.Window, currentTheme, currentLang string, handlers SettingsHandlers) dialog.Dialog {
 	tabs := container.NewAppTabs(
 		container.NewTabItem(i18n.T("settings.tab.appearance"), pane(appearancePane(currentTheme, currentLang, handlers))),
 		container.NewTabItem(i18n.T("settings.tab.general"), pane(generalPane())),
@@ -28,6 +28,7 @@ func showSettings(parent fyne.Window, currentTheme, currentLang string, handlers
 	d := dialog.NewCustom(i18n.T("settings.title"), i18n.T("settings.close"), tabs, parent)
 	d.Resize(fyne.NewSize(720, 480))
 	d.Show()
+	return d
 }
 
 func pane(content fyne.CanvasObject) fyne.CanvasObject {

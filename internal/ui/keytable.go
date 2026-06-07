@@ -18,8 +18,8 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 	}
 
 	type cacheKey struct {
-		n int
-		q string
+		rev int
+		q   string
 	}
 	var cached []app.KeyMeta
 	var ck cacheKey
@@ -29,7 +29,7 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 		if err != nil {
 			fyne.LogError("load keys for table", err)
 		}
-		cur := cacheKey{len(keys), filter.Query}
+		cur := cacheKey{sess.Rev(), filter.Query}
 		if cached == nil || cur != ck {
 			cached = applyFilter(keys, *filter)
 			ck = cur

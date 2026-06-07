@@ -175,9 +175,15 @@ func (s *AppState) ShowOpenDialogNewTab() {
 }
 
 func (s *AppState) ShowSettings() {
-	showSettings(s.w, s.themePref, i18n.Chosen(), SettingsHandlers{
-		OnTheme:    s.SetTheme,
-		OnLanguage: s.SetLanguage,
+	var d dialog.Dialog
+	d = showSettings(s.w, s.themePref, i18n.Chosen(), SettingsHandlers{
+		OnTheme: s.SetTheme,
+		OnLanguage: func(pref string) {
+			s.SetLanguage(pref)
+			// Rebuild the Settings dialog so its own labels swap to the new language.
+			d.Hide()
+			s.ShowSettings()
+		},
 	})
 }
 
@@ -186,6 +192,7 @@ func (s *AppState) SetLanguage(pref string) {
 	s.cfg.Language = pref
 	s.Persist()
 	s.w.SetTitle(i18n.T("app.name"))
+	s.w.SetMainMenu(mainMenu(s))
 	s.Notify()
 }
 
