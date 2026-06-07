@@ -21,6 +21,7 @@ func Run(version string) {
 	state.SetVersion(version)
 	state.ApplyTheme()
 	state.ApplyInitialWindowSize()
+	w.SetFullScreen(true)
 
 	var render func()
 	render = func() {
