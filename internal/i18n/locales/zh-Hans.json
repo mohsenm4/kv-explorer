@@ -78,6 +78,7 @@
   "editor.imageInfoPending": "{{.Mime}} · {{.Size}} · 待处理",
   "editor.hexInfo": "{{.Mime}} · {{.Size}} · 可编辑十六进制",
   "editor.jsonHint": "只读树视图 — 切换到文本模式以编辑。",
+  "editor.timestampHint": "Unix 时间戳 · {{.Time}}",
   "editor.format.auto": "自动",
   "editor.format.text": "文本",
   "editor.format.tree": "树",

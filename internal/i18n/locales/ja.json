@@ -78,6 +78,7 @@
   "editor.imageInfoPending": "{{.Mime}} · {{.Size}} · 保留中",
   "editor.hexInfo": "{{.Mime}} · {{.Size}} · Hex 編集可",
   "editor.jsonHint": "読み取り専用ツリービュー — 編集するにはテキストモードに切り替えてください。",
+  "editor.timestampHint": "Unix タイムスタンプ · {{.Time}}",
   "editor.format.auto": "自動",
   "editor.format.text": "テキスト",
   "editor.format.tree": "ツリー",

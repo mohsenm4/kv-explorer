@@ -78,6 +78,7 @@
   "editor.imageInfoPending": "{{.Mime}} · {{.Size}} · pendiente",
   "editor.hexInfo": "{{.Mime}} · {{.Size}} · hex editable",
   "editor.jsonHint": "Vista de árbol de solo lectura — cambia a modo Texto para editar.",
+  "editor.timestampHint": "Marca de tiempo Unix · {{.Time}}",
   "editor.format.auto": "Auto",
   "editor.format.text": "Texto",
   "editor.format.tree": "Árbol",

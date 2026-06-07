@@ -78,6 +78,7 @@
   "editor.imageInfoPending": "{{.Mime}} · {{.Size}} · ausstehend",
   "editor.hexInfo": "{{.Mime}} · {{.Size}} · Hex bearbeitbar",
   "editor.jsonHint": "Schreibgeschützte Baumansicht — wechsle in den Textmodus zum Bearbeiten.",
+  "editor.timestampHint": "Unix-Zeitstempel · {{.Time}}",
   "editor.format.auto": "Auto",
   "editor.format.text": "Text",
   "editor.format.tree": "Baum",
