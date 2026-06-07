@@ -65,15 +65,6 @@ func appearancePane(currentTheme, currentLang string, h SettingsHandlers) fyne.C
 		themeRadio.SetSelected(light)
 	}
 
-	density := widget.NewRadioGroup([]string{
-		i18n.T("settings.appearance.density.compact"),
-		i18n.T("settings.appearance.density.comfortable"),
-	}, nil)
-	density.SetSelected(i18n.T("settings.appearance.density.comfortable"))
-
-	zebra := widget.NewCheck(i18n.T("settings.appearance.zebra"), nil)
-	mono := widget.NewCheck(i18n.T("settings.appearance.mono"), nil)
-
 	langChoices := i18n.Available()
 	labels := make([]string, len(langChoices))
 	labelByCode := map[string]string{}
@@ -87,14 +78,15 @@ func appearancePane(currentTheme, currentLang string, h SettingsHandlers) fyne.C
 		labelByCode[c.Code] = lbl
 		codeByLabel[lbl] = c.Code
 	}
-	// Callback attached after SetSelected so the initial selection doesn't fire the language switch (the dialog reference isn't ready yet).
-	langSelect := widget.NewSelect(labels, nil)
+	// RadioGroup (not Select): Fyne's popup menu sizes each item by canvas.Text glyph bounds, so plain-ASCII rows like "English" render shorter than CJK/diacritic rows. RadioGroup uses max item height, so rows stay uniform.
+	// Callback attached after SetSelected so initial selection doesn't fire the switch.
+	langRadio := widget.NewRadioGroup(labels, nil)
 	if lbl, ok := labelByCode[currentLang]; ok {
-		langSelect.SetSelected(lbl)
+		langRadio.SetSelected(lbl)
 	} else {
-		langSelect.SetSelected(labelByCode[i18n.SystemTag])
+		langRadio.SetSelected(labelByCode[i18n.SystemTag])
 	}
-	langSelect.OnChanged = func(s string) {
+	langRadio.OnChanged = func(s string) {
 		if h.OnLanguage == nil {
 			return
 		}
@@ -110,13 +102,7 @@ func appearancePane(currentTheme, currentLang string, h SettingsHandlers) fyne.C
 		themeRadio,
 		gap(8),
 		sectionLabel(i18n.T("settings.appearance.language")),
-		langSelect,
-		gap(8),
-		sectionLabel(i18n.T("settings.appearance.density")),
-		density,
-		gap(8),
-		zebra,
-		mono,
+		langRadio,
 	)
 }
 
