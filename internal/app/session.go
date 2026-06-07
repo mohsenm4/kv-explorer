@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -99,8 +101,10 @@ func (s *Session) Close() error {
 }
 
 // makePreview returns a short one-line preview for the table cell.
-// Binary content is summarised by MIME and size; text gets its first
-// ~120 chars with control bytes collapsed.
+// JSON gets a field-summary like `{id, name, +3}` or `[12 items]` so
+// users can recognise the shape without reading raw braces. Binary content
+// is summarised by MIME and size; other text gets its first ~120 chars
+// with whitespace collapsed.
 func makePreview(v []byte) string {
 	if len(v) == 0 {
 		return ""
@@ -114,6 +118,10 @@ func makePreview(v []byte) string {
 	}
 	if !isText {
 		return fmt.Sprintf("[%s · %s]", mime, humanSize(int64(len(v))))
+	}
+
+	if jp := jsonPreview(v); jp != "" {
+		return jp
 	}
 
 	const max = 120
@@ -131,6 +139,104 @@ func makePreview(v []byte) string {
 		return s[:max] + "…"
 	}
 	return s
+}
+
+// jsonPreview returns a structural one-liner for JSON values:
+//   - object  → `{id, name, email, +3}` (first 3 keys, +N for the rest)
+//   - array   → `[12 items]` for non-empty, `[]` for empty
+//   - empty object → `{}`
+//
+// Keys are listed in their on-wire order via json.Decoder so the preview
+// matches what the user sees in the editor. Returns "" if v isn't JSON,
+// letting the caller fall back to the raw-text preview.
+func jsonPreview(v []byte) string {
+	trimmed := bytes.TrimSpace(v)
+	if len(trimmed) == 0 {
+		return ""
+	}
+	switch trimmed[0] {
+	case '{':
+		keys, err := topLevelObjectKeys(trimmed)
+		if err != nil {
+			return ""
+		}
+		if len(keys) == 0 {
+			return "{}"
+		}
+		const show = 3
+		head := keys
+		extra := 0
+		if len(keys) > show {
+			head = keys[:show]
+			extra = len(keys) - show
+		}
+		if extra > 0 {
+			return fmt.Sprintf("{%s, +%d}", strings.Join(head, ", "), extra)
+		}
+		return fmt.Sprintf("{%s}", strings.Join(head, ", "))
+	case '[':
+		n, err := topLevelArrayLen(trimmed)
+		if err != nil {
+			return ""
+		}
+		if n == 0 {
+			return "[]"
+		}
+		if n == 1 {
+			return "[1 item]"
+		}
+		return fmt.Sprintf("[%d items]", n)
+	}
+	return ""
+}
+
+func topLevelObjectKeys(v []byte) ([]string, error) {
+	dec := json.NewDecoder(bytes.NewReader(v))
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return nil, fmt.Errorf("not an object")
+	}
+	var keys []string
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return nil, err
+		}
+		k, ok := kt.(string)
+		if !ok {
+			return nil, fmt.Errorf("non-string key")
+		}
+		keys = append(keys, k)
+		// Skip the value (could be any JSON).
+		var skip json.RawMessage
+		if err := dec.Decode(&skip); err != nil {
+			return nil, err
+		}
+	}
+	return keys, nil
+}
+
+func topLevelArrayLen(v []byte) (int, error) {
+	dec := json.NewDecoder(bytes.NewReader(v))
+	tok, err := dec.Token()
+	if err != nil {
+		return 0, err
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '[' {
+		return 0, fmt.Errorf("not an array")
+	}
+	n := 0
+	for dec.More() {
+		var skip json.RawMessage
+		if err := dec.Decode(&skip); err != nil {
+			return 0, err
+		}
+		n++
+	}
+	return n, nil
 }
 
 func hasControlBytes(v []byte) bool {

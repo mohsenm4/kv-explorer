@@ -42,6 +42,7 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 	)
 
 	detected, mime := DetectContent(entry.Value)
+	isJSON := mime == "application/json"
 
 	bodyStack := container.NewStack()
 	var current func() ([]byte, error)
@@ -52,16 +53,20 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		switch mode {
 		case "Text":
 			body, current, reset = textBody(entry.Value)
+		case "Tree":
+			body, current, reset = jsonTreeBody(v, entry.Value)
 		case "Hex":
 			body, current, reset = hexBody(v, entry.Value, mime)
 		case "Image":
 			body, current, reset = imageBody(v, parent, entry.Value, mime)
 		default: // Auto
-			switch detected {
-			case KindImage:
+			switch {
+			case detected == KindImage:
 				body, current, reset = imageBody(v, parent, entry.Value, mime)
-			case KindBinary:
+			case detected == KindBinary:
 				body, current, reset = hexBody(v, entry.Value, mime)
+			case isJSON:
+				body, current, reset = jsonTreeBody(v, entry.Value)
 			default:
 				body, current, reset = textBody(entry.Value)
 			}
@@ -70,7 +75,8 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		bodyStack.Refresh()
 	}
 
-	format := widget.NewRadioGroup([]string{"Auto", "Text", "Hex", "Image"}, func(s string) {
+	formatChoices := []string{"Auto", "Text", "Tree", "Hex", "Image"}
+	format := widget.NewRadioGroup(formatChoices, func(s string) {
 		rebuild(s)
 	})
 	format.Horizontal = true
