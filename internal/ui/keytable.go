@@ -23,7 +23,10 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 	var ck cacheKey
 
 	read := func() []app.KeyMeta {
-		keys, _ := sess.Keys()
+		keys, err := sess.Keys()
+		if err != nil {
+			fyne.LogError("load keys for table", err)
+		}
 		cur := cacheKey{len(keys), filter.Query}
 		if cached == nil || cur != ck {
 			cached = applyFilter(keys, *filter)

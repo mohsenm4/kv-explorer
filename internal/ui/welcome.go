@@ -40,17 +40,22 @@ func welcomePage(s *AppState) fyne.CanvasObject {
 	})
 	open.Importance = widget.HighImportance
 
-	openRecent := widget.NewButtonWithIcon("Open Recent", fynetheme.MenuDropDownIcon(), func() {
-		// TODO Step 16: recent dropdown menu (needs persistence)
-	})
+	recents := recentsFromConfig(s.Recents())
+
+	openRecent := widget.NewButtonWithIcon("Open Recent", fynetheme.MenuDropDownIcon(), nil)
 	openRecent.IconPlacement = widget.ButtonIconTrailingText
+	if len(recents) == 0 {
+		openRecent.Disable()
+	} else {
+		openRecent.OnTapped = func() {
+			showRecentMenu(s.w, openRecent, recents, func(r recentEntry) {
+				s.OpenSession(OpenRequest{Engine: kvstore.EngineKind(r.engine), Path: r.path})
+			})
+		}
+	}
 
 	actions := container.NewHBox(layout.NewSpacer(), open, openRecent, layout.NewSpacer())
 
-	recents := recentsFromConfig(s.Recents())
-	if len(recents) == 0 {
-		recents = fakeRecents()
-	}
 	recentBlock := buildRecentBlock(v, fg, muted, recents, func(r recentEntry) {
 		s.OpenSession(OpenRequest{Engine: kvstore.EngineKind(r.engine), Path: r.path})
 	})

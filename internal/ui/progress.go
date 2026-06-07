@@ -4,8 +4,21 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 )
+
+// installEscClose wires Esc to hide d, and unregisters the shortcut when
+// the dialog closes. Without the unregister, every dialog instance leaves
+// a stale Hide-closure pointing at a dead dialog on the canvas, and a
+// later Esc press resolves to the dead handler instead of the live one.
+func installEscClose(parent fyne.Window, d dialog.Dialog) {
+	sc := &desktop.CustomShortcut{KeyName: fyne.KeyEscape}
+	parent.Canvas().AddShortcut(sc, func(_ fyne.Shortcut) { d.Hide() })
+	d.SetOnClosed(func() {
+		parent.Canvas().RemoveShortcut(sc)
+	})
+}
 
 // withProgress runs fn on a goroutine while showing a non-dismissable
 // progress dialog over parent. When fn returns, the dialog closes and

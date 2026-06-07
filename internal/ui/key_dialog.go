@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/driver/desktop"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -229,9 +228,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	}, parent)
 	d.Resize(fyne.NewSize(560, 460))
 	d.SetConfirmImportance(widget.HighImportance)
-	// Esc closes the dialog
-	parent.Canvas().AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEscape},
-		func(_ fyne.Shortcut) { d.Hide() })
+	installEscClose(parent, d)
 	d.Show()
 }
 

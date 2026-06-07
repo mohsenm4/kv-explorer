@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -53,6 +54,7 @@ func mainPage(s *AppState) fyne.CanvasObject {
 		treeBox.Objects = []fyne.CanvasObject{prefixTree(sess, func(key []byte) {
 			val, err := sess.Store.Get(key)
 			if err != nil {
+				dialog.ShowError(err, w)
 				return
 			}
 			loadEditorFor(kvstore.Entry{Key: key, Value: val})

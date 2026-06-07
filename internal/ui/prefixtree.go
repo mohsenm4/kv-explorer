@@ -15,7 +15,10 @@ import (
 // onSelect fires when the user picks a leaf (Step 9 will wire it into the
 // editor).
 func prefixTree(sess *app.Session, onSelect func(key []byte)) fyne.CanvasObject {
-	metas, _ := sess.Keys()
+	metas, err := sess.Keys()
+	if err != nil {
+		fyne.LogError("load keys for tree", err)
+	}
 	keys := make([]string, 0, len(metas))
 	for _, m := range metas {
 		keys = append(keys, m.Key)

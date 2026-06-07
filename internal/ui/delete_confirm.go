@@ -1,11 +1,12 @@
 package ui
 
 import (
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/driver/desktop"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -57,16 +58,14 @@ func showDeleteKey(parent fyne.Window, sess *app.Session, key []byte, onDeleted 
 	}, parent)
 	d.Resize(fyne.NewSize(480, 240))
 	d.SetConfirmImportance(widget.DangerImportance)
-	// Esc closes the dialog
-	parent.Canvas().AddShortcut(&desktop.CustomShortcut{KeyName: fyne.KeyEscape},
-		func(_ fyne.Shortcut) { d.Hide() })
+	installEscClose(parent, d)
 	d.Show()
 }
 
 // displayKey formats a key for human display — text when valid UTF-8,
 // otherwise a short hex prefix.
 func displayKey(k []byte) string {
-	if _, mime := DetectContent(k); mime == "text/plain" || mime[:5] == "text/" {
+	if _, mime := DetectContent(k); strings.HasPrefix(mime, "text/") {
 		return string(k)
 	}
 	const maxBytes = 32

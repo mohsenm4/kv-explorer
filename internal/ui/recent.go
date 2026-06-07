@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/config"
 )
@@ -28,13 +29,26 @@ func recentsFromConfig(rs []config.Recent) []recentEntry {
 	return out
 }
 
-func fakeRecents() []recentEntry {
-	now := time.Now()
-	return []recentEntry{
-		{"~/data/users.pebble", "pebble", now.Add(-2 * time.Hour)},
-		{"~/work/cache.badger", "badger", now.Add(-26 * time.Hour)},
-		{"/tmp/scratch.ldb", "leveldb", now.Add(-3 * 24 * time.Hour)},
+// showRecentMenu pops up a dropdown anchored below anchor with one item
+// per recent. Picking an item calls onPick with that entry.
+func showRecentMenu(parent fyne.Window, anchor fyne.CanvasObject, entries []recentEntry, onPick func(recentEntry)) {
+	if len(entries) == 0 {
+		return
 	}
+	items := make([]*fyne.MenuItem, 0, len(entries))
+	for _, e := range entries {
+		entry := e
+		label := fmt.Sprintf("[%s]  %s", entry.engine, middleTruncate(entry.path, 56))
+		items = append(items, fyne.NewMenuItem(label, func() {
+			if onPick != nil {
+				onPick(entry)
+			}
+		}))
+	}
+	menu := fyne.NewMenu("", items...)
+	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(anchor)
+	pos.Y += anchor.Size().Height
+	widget.ShowPopUpMenuAtPosition(menu, parent.Canvas(), pos)
 }
 
 func buildRecentBlock(v fyne.ThemeVariant, fg, muted color.Color, entries []recentEntry, onPick func(recentEntry)) fyne.CanvasObject {

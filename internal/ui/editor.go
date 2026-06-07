@@ -120,12 +120,16 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 			dialog.ShowError(err, parent)
 			return
 		}
-		// Truncation guard: only applies to text mode (Auto-on-text or
-		// forced Text) where the visible buffer is a slice of the
-		// original. Saving would silently destroy the tail.
+		// Truncation guard: the visible buffer is a slice of the
+		// original in both Text (>displayValueMax) and Hex
+		// (>hexEditFormatMax) modes. Saving without a confirm would
+		// silently destroy the tail.
 		mode := format.Selected
 		isTextMode := mode == "Text" || (mode == "Auto" && detected == KindText)
-		if isTextMode && len(entry.Value) > displayValueMax && len(data) < len(entry.Value) {
+		isHexMode := mode == "Hex" || (mode == "Auto" && detected == KindBinary)
+		truncated := (isTextMode && len(entry.Value) > displayValueMax) ||
+			(isHexMode && len(entry.Value) > hexEditFormatMax)
+		if truncated && len(data) < len(entry.Value) {
 			dialog.ShowConfirm(
 				"Replace value?",
 				fmt.Sprintf("You're about to replace a %s value with %s. Anything past the visible buffer will be lost.\n\nUse Export to keep the full content.",
@@ -177,15 +181,25 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 }
 
 func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) {
+	displayed := displayValue(value)
 	be := widget.NewMultiLineEntry()
 	be.TextStyle = fyne.TextStyle{Monospace: true}
 	be.Wrapping = fyne.TextWrapBreak
-	be.SetText(displayValue(value))
+	be.SetText(displayed)
 	// Editable even when truncated. The outer Save handler warns before
 	// overwriting a much larger original.
 	return be,
-		func() ([]byte, error) { return []byte(be.Text), nil },
-		func() { be.SetText(displayValue(value)) }
+		func() ([]byte, error) {
+			// If the user didn't touch the text, return the original
+			// bytes verbatim. Without this, displayValue's JSON
+			// pretty-print would silently rewrite on-disk JSON to its
+			// indented form on every open-and-save.
+			if be.Text == displayed {
+				return value, nil
+			}
+			return []byte(be.Text), nil
+		},
+		func() { be.SetText(displayed) }
 }
 
 // imageBody renders an image preview plus a Replace… button that stages
