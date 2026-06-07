@@ -12,11 +12,14 @@ This skill compares the performance of the three supported KV-Explorer databases
 
 ## Steps
 
-1. Verify that benchmark packages exist in `internal/databases/<x>/bench_test.go`.
+1. Verify that benchmark packages exist in `internal/kvstore/<engine>/bench_test.go`.
+   If they don't, add `Benchmark<Op>` functions next to the existing
+   `*_test.go` files in each adapter (`pebble`, `badger`, `leveldb`) before
+   continuing.
 2. Run the benchmarks:
 
    ```bash
-   go test -bench=. -benchmem -benchtime=5s ./internal/databases/...
+   go test -bench=. -benchmem -benchtime=5s ./internal/kvstore/...
    ```
 
 3. Collect the output and generate a comparison report at `docs/benchmarks/YYYY-MM-DD.md`.

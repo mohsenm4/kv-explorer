@@ -18,14 +18,14 @@ You are a performance specialist. Your job is to identify bottlenecks and memory
 1. Run a CPU profile:
 
    ```bash
-   go test -cpuprofile=cpu.prof -bench=. ./internal/databases/...
+   go test -cpuprofile=cpu.prof -bench=. ./internal/kvstore/...
    go tool pprof -top cpu.prof
    ```
 
 2. Run a memory profile:
 
    ```bash
-   go test -memprofile=mem.prof -bench=. ./internal/databases/...
+   go test -memprofile=mem.prof -bench=. ./internal/kvstore/...
    go tool pprof -top mem.prof
    ```
 

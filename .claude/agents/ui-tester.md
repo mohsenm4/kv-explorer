@@ -13,9 +13,8 @@ model: claude-sonnet-4-6
 
 You are a specialized UI tester for KV-Explorer. Your scope covers:
 
-- `internal/ui/mainwindow/`
-- `internal/ui/components/`
-- `internal/ui/theme/`
+- `internal/ui/` (Fyne widgets and page composition — `mainwindow.go`, `welcome.go`, `toolbar.go`, `keytable.go`, `editor.go`, etc.)
+- `internal/ui/theme/` (color, spacing, and typography tokens)
 
 # Responsibilities
 

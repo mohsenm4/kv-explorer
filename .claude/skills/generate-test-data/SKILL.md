@@ -21,10 +21,13 @@ Produce reproducible datasets used for UI testing, performance work, and filter 
 
 ## Execution
 
-Use the built-in generator:
+`cmd/kvexplorer` is the GUI binary and does not accept generator flags. Add
+a small `cmd/gendata` (or one-off `_test.go` helper) that opens the target
+store via `internal/kvstore` and writes the requested pattern. Invoke it
+with:
 
 ```bash
-go run ./cmd/kvexplorer --generate-test-data \
+go run ./cmd/gendata \
     --db=<pebble|badger|leveldb> \
     --pattern=<sequential|random|hierarchical|large> \
     --count=<N> \

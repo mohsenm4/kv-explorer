@@ -43,4 +43,7 @@ examples:
 ## Notes
 
 - Building macOS ARM from an Intel host requires Docker (`fyne-cross` uses it).
-- Bump the version string in `internal/config/version.go` before a release.
+- The version string lives in `cmd/kvexplorer/main.go` (`var version`) and is
+  injected at build time via `-ldflags "-X main.version=<tag>"`. The release
+  workflow (`.github/workflows/release.yml`) sets it from the git tag — no
+  source edit is needed for a tagged release.
