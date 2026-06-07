@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/config"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
 type recentEntry struct {
@@ -20,7 +21,6 @@ type recentEntry struct {
 	when   time.Time
 }
 
-// recentsFromConfig converts the persisted entries into the ui-level form.
 func recentsFromConfig(rs []config.Recent) []recentEntry {
 	out := make([]recentEntry, 0, len(rs))
 	for _, r := range rs {
@@ -29,8 +29,6 @@ func recentsFromConfig(rs []config.Recent) []recentEntry {
 	return out
 }
 
-// showRecentMenu pops up a dropdown anchored below anchor with one item
-// per recent. Picking an item calls onPick with that entry.
 func showRecentMenu(parent fyne.Window, anchor fyne.CanvasObject, entries []recentEntry, onPick func(recentEntry)) {
 	if len(entries) == 0 {
 		return
@@ -55,7 +53,7 @@ func buildRecentBlock(v fyne.ThemeVariant, fg, muted color.Color, entries []rece
 	if len(entries) == 0 {
 		return container.NewWithoutLayout()
 	}
-	heading := canvas.NewText("RECENT", muted)
+	heading := canvas.NewText(i18n.T("welcome.recent"), muted)
 	heading.TextSize = 11
 	heading.TextStyle = fyne.TextStyle{Bold: true}
 
@@ -87,9 +85,7 @@ func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry, onPick
 	})
 }
 
-// middleTruncate shortens a long path by collapsing its middle to "…"
-// so both the prefix (e.g. "~/Desktop") and the leaf (db name) stay
-// visible. n is the target visible character count.
+// middleTruncate collapses the middle of a path to "…" so both prefix and leaf stay visible; n is the target visible length.
 func middleTruncate(s string, n int) string {
 	if len(s) <= n {
 		return s
@@ -108,15 +104,15 @@ func relTime(t time.Time) string {
 	d := time.Since(t)
 	switch {
 	case d < time.Minute:
-		return "just now"
+		return i18n.T("time.justNow")
 	case d < time.Hour:
-		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+		return i18n.Tf("time.minutesAgo", map[string]any{"Count": int(d.Minutes())})
 	case d < 24*time.Hour:
-		return fmt.Sprintf("%dh ago", int(d.Hours()))
+		return i18n.Tf("time.hoursAgo", map[string]any{"Count": int(d.Hours())})
 	case d < 48*time.Hour:
-		return "yesterday"
+		return i18n.T("time.yesterday")
 	case d < 7*24*time.Hour:
-		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+		return i18n.Tf("time.daysAgo", map[string]any{"Count": int(d.Hours() / 24)})
 	default:
 		return t.Format("Jan 2")
 	}

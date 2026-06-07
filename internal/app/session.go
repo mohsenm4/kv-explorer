@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,18 +13,12 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// KeyMeta is the lightweight per-row info the UI keeps in memory: the key,
-// its value size, and a short preview string. The preview is computed once
-// at session load and reused so the table doesn't refetch values on every
-// cell render.
 type KeyMeta struct {
 	Key     string
 	Size    int
 	Preview string
 }
 
-// Session represents one open database. Multiple sessions can coexist
-// (one per UI tab once Step 17 lands).
 type Session struct {
 	Engine    kvstore.EngineKind
 	Path      string
@@ -31,7 +27,11 @@ type Session struct {
 	SizeBytes int64
 
 	keys []KeyMeta
+	rev  int
 }
+
+// Rev bumps on every reload; UI caches keyed by Rev() detect mutations even when key count stays the same (e.g. rename or value edit).
+func (s *Session) Rev() int { return s.rev }
 
 func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions) (*Session, error) {
 	store, err := OpenStore(kind, path, opts)
@@ -49,8 +49,6 @@ func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions)
 	return s, nil
 }
 
-// Keys returns the cached list of (key, size, preview) tuples sorted by
-// key. The cache is populated on session open and invalidated by Refresh.
 func (s *Session) Keys() ([]KeyMeta, error) {
 	if s.keys != nil {
 		return s.keys, nil
@@ -58,14 +56,10 @@ func (s *Session) Keys() ([]KeyMeta, error) {
 	return s.reloadKeys()
 }
 
-// Value fetches the value bytes for a key directly from the store. Values
-// are never cached at the session level — callers can wrap their own
-// cache if hot lookups warrant it.
 func (s *Session) Value(key []byte) ([]byte, error) {
 	return s.Store.Get(key)
 }
 
-// Refresh re-iterates the store, refreshing the key cache and counts.
 func (s *Session) Refresh() error {
 	_, err := s.reloadKeys()
 	return err
@@ -88,6 +82,7 @@ func (s *Session) reloadKeys() ([]KeyMeta, error) {
 	}
 	s.keys = out
 	s.KeyCount = len(out)
+	s.rev++
 	return out, nil
 }
 
@@ -98,9 +93,6 @@ func (s *Session) Close() error {
 	return s.Store.Close()
 }
 
-// makePreview returns a short one-line preview for the table cell.
-// Binary content is summarised by MIME and size; text gets its first
-// ~120 chars with control bytes collapsed.
 func makePreview(v []byte) string {
 	if len(v) == 0 {
 		return ""
@@ -114,6 +106,10 @@ func makePreview(v []byte) string {
 	}
 	if !isText {
 		return fmt.Sprintf("[%s · %s]", mime, humanSize(int64(len(v))))
+	}
+
+	if jp := jsonPreview(v); jp != "" {
+		return jp
 	}
 
 	const max = 120
@@ -131,6 +127,96 @@ func makePreview(v []byte) string {
 		return s[:max] + "…"
 	}
 	return s
+}
+
+// Returns "" for non-JSON so the caller can fall back to the raw-text preview.
+func jsonPreview(v []byte) string {
+	trimmed := bytes.TrimSpace(v)
+	if len(trimmed) == 0 {
+		return ""
+	}
+	switch trimmed[0] {
+	case '{':
+		keys, err := topLevelObjectKeys(trimmed)
+		if err != nil {
+			return ""
+		}
+		if len(keys) == 0 {
+			return "{}"
+		}
+		const show = 3
+		head := keys
+		extra := 0
+		if len(keys) > show {
+			head = keys[:show]
+			extra = len(keys) - show
+		}
+		if extra > 0 {
+			return fmt.Sprintf("{%s, +%d}", strings.Join(head, ", "), extra)
+		}
+		return fmt.Sprintf("{%s}", strings.Join(head, ", "))
+	case '[':
+		n, err := topLevelArrayLen(trimmed)
+		if err != nil {
+			return ""
+		}
+		if n == 0 {
+			return "[]"
+		}
+		if n == 1 {
+			return "[1 item]"
+		}
+		return fmt.Sprintf("[%d items]", n)
+	}
+	return ""
+}
+
+func topLevelObjectKeys(v []byte) ([]string, error) {
+	dec := json.NewDecoder(bytes.NewReader(v))
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '{' {
+		return nil, fmt.Errorf("not an object")
+	}
+	var keys []string
+	for dec.More() {
+		kt, err := dec.Token()
+		if err != nil {
+			return nil, err
+		}
+		k, ok := kt.(string)
+		if !ok {
+			return nil, fmt.Errorf("non-string key")
+		}
+		keys = append(keys, k)
+		var skip json.RawMessage
+		if err := dec.Decode(&skip); err != nil {
+			return nil, err
+		}
+	}
+	return keys, nil
+}
+
+func topLevelArrayLen(v []byte) (int, error) {
+	dec := json.NewDecoder(bytes.NewReader(v))
+	tok, err := dec.Token()
+	if err != nil {
+		return 0, err
+	}
+	if d, ok := tok.(json.Delim); !ok || d != '[' {
+		return 0, fmt.Errorf("not an array")
+	}
+	n := 0
+	for dec.More() {
+		var skip json.RawMessage
+		if err := dec.Decode(&skip); err != nil {
+			return 0, err
+		}
+		n++
+	}
+	return n, nil
 }
 
 func hasControlBytes(v []byte) bool {

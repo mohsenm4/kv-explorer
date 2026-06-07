@@ -5,9 +5,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 )
 
-// registerShortcuts wires canvas-level shortcuts to AppState. Per-page
-// actions (add/edit/delete/refresh/focus) flow through Fire* methods so
-// they no-op when there's no session.
 func registerShortcuts(w fyne.Window, s *AppState) {
 	c := w.Canvas()
 
@@ -23,8 +20,7 @@ func registerShortcuts(w fyne.Window, s *AppState) {
 		{shortcut(fyne.KeyF5, 0), s.FireRefresh},
 		{shortcut(fyne.KeyDelete, 0), s.FireDeleteKey},
 		{shortcut(fyne.KeyBackspace, 0), s.FireDeleteKey},
-		// Cmd+Tab is owned by the OS on macOS, so cycle on Ctrl+Tab
-		// everywhere instead. Settings → Shortcuts pane mirrors this.
+		// Cmd+Tab is OS-reserved on macOS; use Ctrl+Tab everywhere instead.
 		{shortcut(fyne.KeyTab, fyne.KeyModifierControl), s.CycleTab},
 	}
 

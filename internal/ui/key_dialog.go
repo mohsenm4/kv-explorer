@@ -14,19 +14,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// showAddKey opens the Add key dialog. onSaved fires after a successful
-// write so the parent can refresh views.
 func showAddKey(parent fyne.Window, sess *app.Session, onSaved func()) {
-	showKeyDialog(parent, sess, "Add key", nil, nil, onSaved)
+	showKeyDialog(parent, sess, i18n.T("addKey.title"), nil, nil, onSaved)
 }
 
-// showEditKey opens the Edit key dialog prefilled with the entry's
-// current key and value.
 func showEditKey(parent fyne.Window, sess *app.Session, entry kvstore.Entry, onSaved func()) {
-	showKeyDialog(parent, sess, "Edit key", entry.Key, entry.Value, onSaved)
+	showKeyDialog(parent, sess, i18n.T("editKey.title"), entry.Key, entry.Value, onSaved)
 }
 
 func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, oldValue []byte, onSaved func()) {
@@ -34,19 +31,19 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 
 	keyEntry := widget.NewEntry()
 	keyEntry.TextStyle = fyne.TextStyle{Monospace: true}
-	keyEntry.SetPlaceHolder("e.g. users/0042")
+	keyEntry.SetPlaceHolder(i18n.T("keyDialog.keyPlaceholder"))
 
-	keyMode := widget.NewRadioGroup([]string{"Text", "Hex"}, nil)
+	textLabel := i18n.T("editor.format.text")
+	hexLabel := i18n.T("editor.format.hex")
+	keyMode := widget.NewRadioGroup([]string{textLabel, hexLabel}, nil)
 	keyMode.Horizontal = true
-	keyMode.SetSelected("Text")
+	keyMode.SetSelected(textLabel)
 
 	if editing {
-		// Default key mode based on whether oldKey is valid UTF-8 without
-		// control bytes — hash-like binary keys land in Hex.
 		if _, mime := DetectContent(oldKey); strings.HasPrefix(mime, "text/") {
 			keyEntry.SetText(string(oldKey))
 		} else {
-			keyMode.SetSelected("Hex")
+			keyMode.SetSelected(hexLabel)
 			keyEntry.SetText(hex.EncodeToString(oldKey))
 		}
 	}
@@ -54,12 +51,9 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	valueEntry := widget.NewMultiLineEntry()
 	valueEntry.TextStyle = fyne.TextStyle{Monospace: true}
 	valueEntry.Wrapping = fyne.TextWrapBreak
-	valueEntry.SetPlaceHolder("Type a value or click \"Use file…\" to upload one")
+	valueEntry.SetPlaceHolder(i18n.T("keyDialog.valuePlaceholder"))
 
-	// File-upload state: when non-nil, the dialog will write these bytes
-	// instead of the value entry's text. For Edit on a binary value we
-	// pre-stage the existing bytes so we never try to render megabytes of
-	// garbled text inside MultiLineEntry.
+	// On Edit, pre-stage binary values so we never try to render megabytes of garbled text in MultiLineEntry.
 	var staged []byte
 	autoStage := false
 	if editing {
@@ -84,7 +78,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	fileInfo := widget.NewLabel("")
 	fileInfo.Importance = widget.LowImportance
 
-	clearFile := widget.NewButton("Clear", nil)
+	clearFile := widget.NewButton(i18n.T("keyDialog.clear"), nil)
 	clearFile.Hide()
 	clearFile.OnTapped = func() {
 		staged = nil
@@ -94,14 +88,14 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 		sizeReadout.SetText(fmt.Sprintf("%d B", len(valueEntry.Text)))
 	}
 
-	useFile := widget.NewButtonWithIcon("Use file…", fynetheme.UploadIcon(), func() {
+	useFile := widget.NewButtonWithIcon(i18n.T("keyDialog.useFile"), fynetheme.UploadIcon(), func() {
 		dialog.ShowFileOpen(func(rc fyne.URIReadCloser, err error) {
 			if err != nil || rc == nil {
 				return
 			}
 			name := rc.URI().Name()
 			var data []byte
-			withProgress(parent, "Loading file…", func() error {
+			withProgress(parent, i18n.T("progress.loadingFile"), func() error {
 				var ioErr error
 				data, ioErr = io.ReadAll(rc)
 				rc.Close()
@@ -113,7 +107,11 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 				}
 				staged = data
 				_, mime := DetectContent(data)
-				fileInfo.SetText(fmt.Sprintf("Loaded %s · %s · %s", name, mime, humanSize(int64(len(data)))))
+				fileInfo.SetText(i18n.Tf("keyDialog.loadedInfo", map[string]any{
+					"Name": name,
+					"Mime": mime,
+					"Size": humanSize(int64(len(data))),
+				}))
 				clearFile.Show()
 				valueEntry.Disable()
 				sizeReadout.SetText(fmt.Sprintf("%d B", len(data)))
@@ -121,7 +119,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 		}, parent)
 	})
 
-	exportBtn := widget.NewButtonWithIcon("Export…", fynetheme.DownloadIcon(), func() {
+	exportBtn := widget.NewButtonWithIcon(i18n.T("keyDialog.export"), fynetheme.DownloadIcon(), func() {
 		data := staged
 		if data == nil {
 			data = []byte(valueEntry.Text)
@@ -133,7 +131,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 			if err != nil || wc == nil {
 				return
 			}
-			withProgress(parent, "Exporting…", func() error {
+			withProgress(parent, i18n.T("progress.exporting"), func() error {
 				_, werr := wc.Write(data)
 				wc.Close()
 				return werr
@@ -158,46 +156,51 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 
 	if autoStage {
 		_, mime := DetectContent(staged)
-		fileInfo.SetText(fmt.Sprintf("Current value: %s · %s", mime, humanSize(int64(len(staged)))))
+		fileInfo.SetText(i18n.Tf("keyDialog.currentInfo", map[string]any{
+			"Mime": mime,
+			"Size": humanSize(int64(len(staged))),
+		}))
 		clearFile.Show()
 		valueEntry.Disable()
 	}
 
 	content := container.NewVBox(
-		sectionLabel("Key"),
+		sectionLabel(i18n.T("keyDialog.keyLabel")),
 		keyEntry,
 		keyMode,
 		gap(6),
-		sectionLabel("Value"),
+		sectionLabel(i18n.T("keyDialog.valueLabel")),
 		valueEntry,
 		fileRow,
 		sizeReadout,
 	)
 
-	confirmLabel := "Add"
+	confirmLabel := i18n.T("keyDialog.confirmAdd")
 	if editing {
-		confirmLabel = "Save changes"
+		confirmLabel = i18n.T("keyDialog.confirmSave")
 	}
 
-	d := dialog.NewCustomConfirm(title, confirmLabel, "Cancel", content, func(ok bool) {
+	d := dialog.NewCustomConfirm(title, confirmLabel, i18n.T("keyDialog.cancel"), content, func(ok bool) {
 		if !ok {
 			return
 		}
-		key, err := parseKey(keyEntry.Text, keyMode.Selected)
+		modeID := "Text"
+		if keyMode.Selected == hexLabel {
+			modeID = "Hex"
+		}
+		key, err := parseKey(keyEntry.Text, modeID)
 		if err != nil {
 			dialog.ShowError(err, parent)
 			return
 		}
 		if len(key) == 0 {
-			dialog.ShowError(errors.New("key cannot be empty"), parent)
+			dialog.ShowError(errors.New(i18n.T("keyDialog.error.emptyKey")), parent)
 			return
 		}
 
-		// Duplicate check — only matters when adding or when the edit
-		// changed the key.
 		if !editing || string(key) != string(oldKey) {
 			if _, err := sess.Store.Get(key); err == nil {
-				dialog.ShowError(fmt.Errorf("key %q already exists", string(key)), parent)
+				dialog.ShowError(errors.New(i18n.Tf("keyDialog.error.duplicateKey", map[string]any{"Key": fmt.Sprintf("%q", string(key))})), parent)
 				return
 			}
 		}
@@ -206,7 +209,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 		if newValue == nil {
 			newValue = []byte(valueEntry.Text)
 		}
-		withProgress(parent, "Saving…", func() error {
+		withProgress(parent, i18n.T("progress.saving"), func() error {
 			if err := sess.Store.Set(key, newValue); err != nil {
 				return err
 			}
@@ -232,7 +235,6 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	d.Show()
 }
 
-// parseKey converts the raw entry text into bytes given the selected mode.
 func parseKey(text, mode string) ([]byte, error) {
 	if mode == "Hex" {
 		clean := strings.Map(func(r rune) rune {
@@ -243,7 +245,7 @@ func parseKey(text, mode string) ([]byte, error) {
 		}, text)
 		b, err := hex.DecodeString(clean)
 		if err != nil {
-			return nil, fmt.Errorf("hex key: %w", err)
+			return nil, fmt.Errorf("%s: %w", i18n.T("keyDialog.error.hexKey"), err)
 		}
 		return b, nil
 	}

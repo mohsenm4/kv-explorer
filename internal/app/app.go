@@ -9,8 +9,7 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore/pebble"
 )
 
-// OpenStore dispatches to the right engine adapter. This is the only place
-// concrete adapter packages are imported — UI code talks to kvstore types only.
+// Only place concrete adapter packages are imported; UI talks to kvstore types.
 func OpenStore(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions) (kvstore.Store, error) {
 	switch kind {
 	case kvstore.EnginePebble:
@@ -24,9 +23,6 @@ func OpenStore(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions) (
 	}
 }
 
-// CountKeys iterates the entire store and returns the key count.
-// This is a temporary helper used by Step 5 to verify the adapter; later
-// the status bar will pull this from a Session.
 func CountKeys(s kvstore.Store) (int, error) {
 	it, err := s.Iter(nil)
 	if err != nil {

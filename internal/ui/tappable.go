@@ -5,7 +5,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// tappable wraps any canvas object and makes it tap-aware.
 type tappable struct {
 	widget.BaseWidget
 	content fyne.CanvasObject

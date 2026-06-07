@@ -1,7 +1,4 @@
-// seed populates a Pebble store with synthetic data shaped like the
-// wireframes in docs/design/spec.md (users/, sessions/, logs/, cache/),
-// plus a few binary samples for the editor's image/hex modes.
-// Usage: go run ./cmd/seed <pebble-path>
+// seed populates a Pebble store with synthetic data. Usage: go run ./cmd/seed <pebble-path>
 package main
 
 import (
@@ -77,7 +74,6 @@ func main() {
 	put("meta/schema_version", "3")
 	put("meta/last_compaction", "2026-06-02T22:00:00Z")
 
-	// Binary samples for the editor's image / hex modes (Step 10c).
 	put("media/red.png", string(makePNG(96, 96, color.RGBA{R: 220, G: 50, B: 50, A: 255})))
 	put("media/blue.png", string(makePNG(96, 96, color.RGBA{R: 50, G: 80, B: 220, A: 255})))
 	put("media/wide.png", string(makePNG(192, 64, color.RGBA{R: 50, G: 180, B: 80, A: 255})))
@@ -86,7 +82,7 @@ func main() {
 	_, _ = rand.Read(randBytes)
 	put("media/random.bin", string(randBytes))
 
-	// Fake MP3 header so DetectContent sees audio/mpeg.
+	// Real MPEG sync bytes so DetectContent reports audio/mpeg.
 	mp3 := append([]byte{0xff, 0xfb, 0x90, 0x00}, randBytes[:200]...)
 	put("media/song.mp3", string(mp3))
 

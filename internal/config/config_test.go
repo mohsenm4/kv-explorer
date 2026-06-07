@@ -14,7 +14,6 @@ func TestAddRecent_DedupAndCap(t *testing.T) {
 		t.Errorf("len = %d, want %d", got, maxRecents)
 	}
 
-	// Re-adding an existing path moves it to the top, no duplicate.
 	c.AddRecent("/path/d", "pebble")
 	if len(c.Recents) != maxRecents {
 		t.Errorf("len after re-add = %d, want %d", len(c.Recents), maxRecents)

@@ -5,19 +5,21 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// keyTable renders the central table of key / value preview / size. It
-// caches the filtered slice between cell renders so applyFilter doesn't
-// run 90+ times per refresh.
-// onSelect fires with the row's key + freshly-fetched value.
+// Filtered rows are cached between cell renders so applyFilter doesn't run 90+ times per refresh.
 func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entry)) *widget.Table {
-	headers := []string{"Key", "Value preview", "Size"}
+	headers := []string{
+		i18n.T("table.header.key"),
+		i18n.T("table.header.valuePreview"),
+		i18n.T("table.header.size"),
+	}
 
 	type cacheKey struct {
-		n int
-		q string
+		rev int
+		q   string
 	}
 	var cached []app.KeyMeta
 	var ck cacheKey
@@ -27,7 +29,7 @@ func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entr
 		if err != nil {
 			fyne.LogError("load keys for table", err)
 		}
-		cur := cacheKey{len(keys), filter.Query}
+		cur := cacheKey{sess.Rev(), filter.Query}
 		if cached == nil || cur != ck {
 			cached = applyFilter(keys, *filter)
 			ck = cur

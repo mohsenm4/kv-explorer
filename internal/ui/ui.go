@@ -5,12 +5,17 @@ import (
 	fyneapp "fyne.io/fyne/v2/app"
 	fynetheme "fyne.io/fyne/v2/theme"
 
+	"github.com/mohsenm4/kv-explorer/internal/config"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
 func Run(version string) {
+	cfg, _ := config.Load()
+	i18n.Init(cfg.Language)
+
 	a := fyneapp.NewWithID("com.kvexplorer.app")
-	w := a.NewWindow("KV-Explorer")
+	w := a.NewWindow(i18n.T("app.name"))
 
 	state := NewAppState(a, w)
 	state.SetVersion(version)

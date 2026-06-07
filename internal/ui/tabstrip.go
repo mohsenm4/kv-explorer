@@ -14,8 +14,6 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-// TabBar carries every session plus the index of the active one and the
-// callbacks that the strip needs to fire.
 type TabBar struct {
 	Sessions []*app.Session
 	Active   int
@@ -24,7 +22,6 @@ type TabBar struct {
 	OnAdd    func()
 }
 
-// tabStrip renders the row of database tabs.
 func tabStrip(v fyne.ThemeVariant, bar TabBar) fyne.CanvasObject {
 	row := container.NewHBox()
 	for i, s := range bar.Sessions {

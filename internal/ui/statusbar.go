@@ -14,18 +14,16 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-// welcomeStatusBar shows "No database open" with the theme toggle on the right.
 func welcomeStatusBar(v fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
-	msg := caption("No database open", muted)
+	msg := caption(i18n.T("status.noDatabase"), muted)
 	return statusBarShell(v, container.NewPadded(msg), themeToggle(v, onToggle))
 }
 
-// mainStatusBar shows engine dot + name + key count + size + path on the
-// left, theme toggle on the right.
 func mainStatusBar(v fyne.ThemeVariant, sess *app.Session, onToggle func()) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	accent := apptheme.DBAccent(string(sess.Engine), v)
@@ -36,7 +34,7 @@ func mainStatusBar(v fyne.ThemeVariant, sess *app.Session, onToggle func()) fyne
 	name.TextSize = 11
 	name.TextStyle = fyne.TextStyle{Bold: true}
 
-	keys := caption(fmt.Sprintf("%s keys", thousands(sess.KeyCount)), muted)
+	keys := caption(i18n.Tf("status.keyCount", map[string]any{"Count": thousands(sess.KeyCount)}), muted)
 	size := caption(humanSize(sess.SizeBytes), muted)
 	path := caption(displayPath(sess.Path), muted)
 
@@ -61,9 +59,9 @@ func statusBarShell(v fyne.ThemeVariant, leftContent, rightContent fyne.CanvasOb
 }
 
 func themeToggle(v fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
-	label := "Light"
+	label := i18n.T("status.theme.light")
 	if v == fynetheme.VariantDark {
-		label = "Dark"
+		label = i18n.T("status.theme.dark")
 	}
 	b := widget.NewButton(label, onToggle)
 	b.Importance = widget.MediumImportance

@@ -7,10 +7,11 @@ import (
 	"fyne.io/fyne/v2/layout"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// ToolbarActions groups the callbacks the top toolbar can fire. nil
-// callbacks render their button as disabled.
+// ToolbarActions groups toolbar callbacks; nil callbacks render as disabled buttons.
 type ToolbarActions struct {
 	OnOpen     func()
 	OnClose    func()
@@ -21,8 +22,7 @@ type ToolbarActions struct {
 	OnSettings func()
 }
 
-// toolbarHandles lets the parent flip Edit/Delete enable state when the
-// table selection changes.
+// toolbarHandles lets the parent flip Edit/Delete enable state on selection change.
 type toolbarHandles struct {
 	bar       fyne.CanvasObject
 	editBtn   *widget.Button
@@ -30,12 +30,12 @@ type toolbarHandles struct {
 }
 
 func buildToolbar(actions ToolbarActions) toolbarHandles {
-	open := toolbarButton("Open", fynetheme.FolderOpenIcon(), actions.OnOpen)
-	closeBtn := toolbarButton("Close", fynetheme.CancelIcon(), actions.OnClose)
-	add := toolbarButton("Add", fynetheme.ContentAddIcon(), actions.OnAdd)
-	edit := toolbarButton("Edit", fynetheme.DocumentCreateIcon(), actions.OnEdit)
-	del := toolbarButton("Delete", fynetheme.DeleteIcon(), actions.OnDelete)
-	refresh := toolbarButton("Refresh", fynetheme.ViewRefreshIcon(), actions.OnRefresh)
+	open := toolbarButton(i18n.T("toolbar.open"), fynetheme.FolderOpenIcon(), actions.OnOpen)
+	closeBtn := toolbarButton(i18n.T("toolbar.close"), fynetheme.CancelIcon(), actions.OnClose)
+	add := toolbarButton(i18n.T("toolbar.add"), fynetheme.ContentAddIcon(), actions.OnAdd)
+	edit := toolbarButton(i18n.T("toolbar.edit"), fynetheme.DocumentCreateIcon(), actions.OnEdit)
+	del := toolbarButton(i18n.T("toolbar.delete"), fynetheme.DeleteIcon(), actions.OnDelete)
+	refresh := toolbarButton(i18n.T("toolbar.refresh"), fynetheme.ViewRefreshIcon(), actions.OnRefresh)
 	settings := toolbarButton("", fynetheme.SettingsIcon(), actions.OnSettings)
 
 	row := container.NewHBox(

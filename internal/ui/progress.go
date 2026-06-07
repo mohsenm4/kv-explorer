@@ -8,10 +8,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-// installEscClose wires Esc to hide d, and unregisters the shortcut when
-// the dialog closes. Without the unregister, every dialog instance leaves
-// a stale Hide-closure pointing at a dead dialog on the canvas, and a
-// later Esc press resolves to the dead handler instead of the live one.
+// installEscClose wires Esc to hide d and unregisters on close — otherwise stale Hide-closures pile up on the canvas and later Esc presses fire dead handlers.
 func installEscClose(parent fyne.Window, d dialog.Dialog) {
 	sc := &desktop.CustomShortcut{KeyName: fyne.KeyEscape}
 	parent.Canvas().AddShortcut(sc, func(_ fyne.Shortcut) { d.Hide() })
@@ -20,13 +17,7 @@ func installEscClose(parent fyne.Window, d dialog.Dialog) {
 	})
 }
 
-// withProgress runs fn on a goroutine while showing a non-dismissable
-// progress dialog over parent. When fn returns, the dialog closes and
-// done is invoked on the UI thread with the error (or nil).
-//
-// The pattern keeps the UI responsive but prevents interaction with
-// other widgets until the operation completes, so a slow Save can't be
-// interrupted midway.
+// withProgress runs fn on a goroutine behind a modal progress dialog so a slow operation can't be interrupted midway; done fires on the UI thread.
 func withProgress(parent fyne.Window, message string, fn func() error, done func(error)) {
 	bar := widget.NewProgressBarInfinite()
 

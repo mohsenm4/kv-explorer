@@ -1,12 +1,5 @@
-// seedmulti populates a LevelDB or BadgerDB store with a diverse mix of
-// value types — light/heavy text, JSON, XML, CSV, YAML, Markdown, PNG/JPEG
-// images, fake MP3/WAV audio, a real minimal XLSX, and random binary blobs.
-// It exists to give the kv-explorer UI varied content to render.
-//
-// Usage:
-//
-//	go run ./cmd/seedmulti --engine=leveldb --path=/path/to/db
-//	go run ./cmd/seedmulti --engine=badger  --path=/path/to/db
+// seedmulti populates a LevelDB or BadgerDB store with a diverse mix of value types for UI rendering.
+// Usage: go run ./cmd/seedmulti --engine=<leveldb|badger> --path=/path/to/db
 package main
 
 import (
@@ -73,24 +66,20 @@ func seed(s kvstore.Store) int {
 		n++
 	}
 
-	// --- Light text -----------------------------------------------------
 	put("text/light/greeting/en", []byte("Hello, world!"))
 	put("text/light/greeting/fa", []byte("سلام دنیا"))
 	put("text/light/greeting/ja", []byte("こんにちは世界"))
 	put("text/light/quote", []byte("Simplicity is the soul of efficiency. — Austin Freeman"))
 	put("text/light/tagline", []byte("kv-explorer: inspect any key-value store."))
 
-	// --- Heavy text -----------------------------------------------------
 	put("text/heavy/lorem/short", []byte(loremParagraph(3)))
 	put("text/heavy/lorem/medium", []byte(loremParagraph(20)))
 	put("text/heavy/lorem/long", []byte(loremParagraph(120)))
 	put("text/heavy/article/release-notes", []byte(releaseNotes()))
 
-	// --- Markdown -------------------------------------------------------
 	put("text/markdown/readme", []byte(readmeMarkdown()))
 	put("text/markdown/changelog", []byte("# Changelog\n\n## v1.0.0\n- Initial release.\n- Added LevelDB adapter.\n- Added BadgerDB adapter.\n"))
 
-	// --- JSON -----------------------------------------------------------
 	cfg, _ := json.MarshalIndent(map[string]any{
 		"app":     "kv-explorer",
 		"version": "1.0.0",
@@ -111,11 +100,9 @@ func seed(s kvstore.Store) int {
 	}, "", "  ")
 	put("json/cache/stats", stats)
 
-	// --- CSV ------------------------------------------------------------
 	put("csv/sales/q1", []byte(csvSales()))
 	put("csv/users", []byte("id,name,email,active\n1,Ali,ali@example.com,true\n2,Sara,sara@example.com,true\n3,Reza,reza@example.com,false\n"))
 
-	// --- XML / YAML -----------------------------------------------------
 	put("xml/feed", []byte(`<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
   <channel>
@@ -127,30 +114,24 @@ func seed(s kvstore.Store) int {
 </rss>`))
 	put("yaml/config", []byte("app: kv-explorer\nversion: 1.0.0\nlog:\n  level: info\n  rotate: daily\nengines:\n  - pebble\n  - badger\n  - leveldb\n"))
 
-	// --- Images (PNG) ---------------------------------------------------
 	put("image/png/red", makePNG(96, 96, color.RGBA{R: 220, G: 50, B: 50, A: 255}))
 	put("image/png/blue", makePNG(96, 96, color.RGBA{R: 50, G: 80, B: 220, A: 255}))
 	put("image/png/green/wide", makePNG(256, 96, color.RGBA{R: 60, G: 180, B: 90, A: 255}))
 	put("image/png/gradient", makeGradientPNG(192, 128))
 
-	// --- Images (JPEG) --------------------------------------------------
 	put("image/jpeg/sunset", makeJPEG(160, 120))
 
-	// --- Audio (fake but with real magic bytes) -------------------------
 	put("audio/mp3/song", makeFakeMP3())
 	put("audio/wav/beep", makeFakeWAV())
 
-	// --- Excel ----------------------------------------------------------
 	put("excel/sales-q1.xlsx", makeXLSX())
 
-	// --- Binary blobs ---------------------------------------------------
 	put("binary/random/1k", randomBytes(1024))
 	put("binary/random/16k", randomBytes(16*1024))
 	put("binary/random/128k", randomBytes(128*1024))
 	put("binary/random/1m", randomBytes(1024*1024))
 	put("binary/zeros/4k", make([]byte, 4096))
 
-	// --- Hierarchical samples mirroring real apps -----------------------
 	for i := 1; i <= 30; i++ {
 		v, _ := json.Marshal(map[string]any{
 			"user_id": fmt.Sprintf("u-%04d", i),
@@ -164,15 +145,12 @@ func seed(s kvstore.Store) int {
 		put(fmt.Sprintf("metrics/2026-06-06/%02d", i), v)
 	}
 
-	// --- Meta -----------------------------------------------------------
 	put("meta/created_at", []byte("2026-06-06T10:00:00Z"))
 	put("meta/schema_version", []byte("1"))
 	put("meta/source", []byte("seedmulti"))
 
 	return n
 }
-
-// --- Helpers ----------------------------------------------------------------
 
 func loremParagraph(sentences int) string {
 	s := []string{
@@ -301,14 +279,12 @@ func makeJPEG(w, h int) []byte {
 	return buf.Bytes()
 }
 
-// makeFakeMP3 returns bytes that begin with a real MPEG audio frame sync so
-// http.DetectContentType reports audio/mpeg. The body is not playable audio.
+// makeFakeMP3 returns bytes with a real MPEG frame sync so http.DetectContentType reports audio/mpeg (body isn't playable).
 func makeFakeMP3() []byte {
 	header := []byte{0xff, 0xfb, 0x90, 0x00}
 	return append(header, randomBytes(4096)...)
 }
 
-// makeFakeWAV returns a minimally-correct RIFF/WAVE header followed by silence.
 func makeFakeWAV() []byte {
 	const sampleRate = 8000
 	const seconds = 1
@@ -320,16 +296,15 @@ func makeFakeWAV() []byte {
 	writeU32LE(buf, uint32(36+dataSize))
 	buf.WriteString("WAVE")
 	buf.WriteString("fmt ")
-	writeU32LE(buf, 16)           // subchunk size
-	writeU16LE(buf, 1)            // PCM
-	writeU16LE(buf, 1)            // channels
-	writeU32LE(buf, sampleRate)   // sample rate
-	writeU32LE(buf, sampleRate*2) // byte rate
-	writeU16LE(buf, 2)            // block align
-	writeU16LE(buf, 16)           // bits/sample
+	writeU32LE(buf, 16)
+	writeU16LE(buf, 1)
+	writeU16LE(buf, 1)
+	writeU32LE(buf, sampleRate)
+	writeU32LE(buf, sampleRate*2)
+	writeU16LE(buf, 2)
+	writeU16LE(buf, 16)
 	buf.WriteString("data")
 	writeU32LE(buf, uint32(dataSize))
-	// Soft sine so the file isn't all zeros.
 	for i := 0; i < numSamples; i++ {
 		v := int16(3000 * math.Sin(2*math.Pi*440*float64(i)/sampleRate))
 		writeI16LE(buf, v)
@@ -343,9 +318,7 @@ func writeU32LE(b *bytes.Buffer, v uint32) {
 	b.Write([]byte{byte(v), byte(v >> 8), byte(v >> 16), byte(v >> 24)})
 }
 
-// makeXLSX builds a minimal but spec-valid .xlsx (Office Open XML) workbook
-// containing a single sheet with a small table. Excel and LibreOffice will
-// open it cleanly.
+// makeXLSX builds a minimal spec-valid .xlsx workbook with one sheet.
 func makeXLSX() []byte {
 	var buf bytes.Buffer
 	zw := zip.NewWriter(&buf)
