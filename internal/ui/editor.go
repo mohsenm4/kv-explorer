@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"os"
 	"strings"
 
 	"fyne.io/fyne/v2"
@@ -24,7 +26,7 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, entry kvstore.Entry, onSaved func()) fyne.CanvasObject {
+func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, entry kvstore.Entry, onSaved func(), onExtSession func(*externalEditSession)) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	fg := themeColor(v, fynetheme.ColorNameForeground)
 
@@ -185,8 +187,93 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		saver.Show()
 	})
 
-	footer := container.NewBorder(nil, nil, export,
-		container.NewHBox(cancel, save), nil)
+	pendingBanner := newPendingBanner(i18n.T("editor.externalPending"))
+	pendingBanner.Hide()
+
+	var currentExt *externalEditSession
+
+	applyBtn := widget.NewButtonWithIcon(i18n.T("editor.apply"), fynetheme.ConfirmIcon(), nil)
+	applyBtn.Importance = widget.HighImportance
+	applyBtn.Hide()
+
+	discardBtn := widget.NewButton(i18n.T("editor.discard"), nil)
+	discardBtn.Hide()
+
+	hidePending := func() {
+		pendingBanner.Hide()
+		applyBtn.Hide()
+		discardBtn.Hide()
+	}
+
+	applyBtn.OnTapped = func() {
+		if currentExt == nil {
+			return
+		}
+		data, err := os.ReadFile(currentExt.Path())
+		if err != nil {
+			dialog.ShowError(err, parent)
+			return
+		}
+		withProgress(parent, i18n.T("progress.saving"), func() error {
+			if err := sess.Store.Set(entry.Key, data); err != nil {
+				return err
+			}
+			return sess.Refresh()
+		}, func(err error) {
+			if err != nil {
+				dialog.ShowError(err, parent)
+				return
+			}
+			hidePending()
+			if onSaved != nil {
+				onSaved()
+			}
+		})
+	}
+
+	discardBtn.OnTapped = hidePending
+
+	doOpenExt := func() {
+		if currentExt != nil {
+			currentExt.Close()
+			currentExt = nil
+		}
+		es, err := startExternalEditSession(entry.Key, entry.Value, func() {
+			pendingBanner.Show()
+			applyBtn.Show()
+			discardBtn.Show()
+		})
+		if err != nil {
+			dialog.ShowError(err, parent)
+			return
+		}
+		currentExt = es
+		if onExtSession != nil {
+			onExtSession(es)
+		}
+	}
+
+	openExt := widget.NewButtonWithIcon(i18n.T("editor.openInVSCode"), fynetheme.ComputerIcon(), func() {
+		if len(entry.Value) > externalSizeWarn {
+			dialog.ShowConfirm(
+				i18n.T("editor.openInVSCode"),
+				i18n.Tf("editor.externalSizeWarn", map[string]any{
+					"Size": humanSize(int64(len(entry.Value))),
+				}),
+				func(ok bool) {
+					if ok {
+						doOpenExt()
+					}
+				}, parent)
+			return
+		}
+		doOpenExt()
+	})
+
+	pendingArea := container.NewHBox(pendingBanner, applyBtn, discardBtn)
+
+	footer := container.NewBorder(nil, nil, container.NewHBox(export, openExt),
+		container.NewHBox(cancel, save), container.NewCenter(pendingArea))
 
 	center := container.NewBorder(
 		container.NewPadded(formatBar),
@@ -195,6 +282,23 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 	)
 
 	return container.NewBorder(container.NewPadded(header), container.NewPadded(footer), nil, nil, center)
+}
+
+// Visible amber pill so the user notices the file changed externally. Color is fixed (not theme-derived) so it stands out in both light and dark.
+func newPendingBanner(text string) *fyne.Container {
+	bg := canvas.NewRectangle(color.NRGBA{R: 0xea, G: 0x86, B: 0x0c, A: 0xff})
+	bg.CornerRadius = 8
+
+	label := canvas.NewText(text, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+	label.TextStyle = fyne.TextStyle{Bold: true}
+	label.TextSize = 13
+
+	icon := canvas.NewText("⚠", color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff})
+	icon.TextStyle = fyne.TextStyle{Bold: true}
+	icon.TextSize = 14
+
+	row := container.NewHBox(icon, label)
+	return container.NewStack(bg, container.NewPadded(row))
 }
 
 func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) {
@@ -380,6 +484,10 @@ func suggestedExportName(key, value []byte) string {
 }
 
 func extensionForBytes(v []byte) string {
+	// http.DetectContentType often labels JSON as text/plain; check directly.
+	if len(v) > 0 && len(v) < 4<<20 && json.Valid(v) {
+		return ".json"
+	}
 	_, mime := DetectContent(v)
 	switch {
 	case strings.HasPrefix(mime, "image/jpeg"):

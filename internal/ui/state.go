@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"sync"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/dialog"
 	fynetheme "fyne.io/fyne/v2/theme"
@@ -24,6 +26,29 @@ type AppState struct {
 
 	page   pageHandlers
 	notify func()
+
+	extEditsMu sync.Mutex
+	extEdits   []*externalEditSession
+}
+
+// RegisterExternalEdit tracks an external-editor session so it's cleaned up on app quit.
+func (s *AppState) RegisterExternalEdit(es *externalEditSession) {
+	if es == nil {
+		return
+	}
+	s.extEditsMu.Lock()
+	s.extEdits = append(s.extEdits, es)
+	s.extEditsMu.Unlock()
+}
+
+func (s *AppState) closeAllExternalEdits() {
+	s.extEditsMu.Lock()
+	items := s.extEdits
+	s.extEdits = nil
+	s.extEditsMu.Unlock()
+	for _, es := range items {
+		es.Close()
+	}
 }
 
 type pageHandlers struct {
@@ -141,6 +166,7 @@ func (s *AppState) CloseActive() {
 }
 
 func (s *AppState) CloseAll() {
+	s.closeAllExternalEdits()
 	for _, sess := range s.sessions {
 		_ = sess.Close()
 	}
