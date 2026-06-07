@@ -82,8 +82,7 @@ func (i *iterator) Close() error {
 	return i.it.Close()
 }
 
-// upperBound returns the smallest key strictly greater than every key with
-// the given prefix, so pebble's range iterator stops at the prefix boundary.
+// upperBound returns the exclusive end key for a prefix range scan.
 func upperBound(prefix []byte) []byte {
 	end := make([]byte, len(prefix))
 	copy(end, prefix)

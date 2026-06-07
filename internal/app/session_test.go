@@ -41,8 +41,7 @@ func TestMakePreview_JSONArray(t *testing.T) {
 }
 
 func TestMakePreview_NonJSONFallback(t *testing.T) {
-	// Looks like JSON-ish text but isn't valid JSON: should fall back to
-	// the raw-text preview rather than producing "".
+	// JSON-ish but invalid: must fall back to raw-text preview, not "".
 	got := makePreview([]byte("{not json at all"))
 	if got == "" {
 		t.Errorf("makePreview fell through to empty for non-JSON text")

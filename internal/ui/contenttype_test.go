@@ -78,7 +78,6 @@ func TestDetectContent_Image(t *testing.T) {
 }
 
 func TestDetectContent_Binary(t *testing.T) {
-	// Arbitrary bytes with embedded NUL: not text, not image, not known.
 	b := []byte{0x00, 0x01, 0x02, 0xff, 0xfe, 0x7f}
 	if k, _ := DetectContent(b); k != KindBinary {
 		t.Errorf("got %v, want KindBinary", k)

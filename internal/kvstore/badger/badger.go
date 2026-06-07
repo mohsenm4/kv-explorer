@@ -13,9 +13,7 @@ type Store struct {
 }
 
 func Open(path string, opts kvstore.OpenOptions) (*Store, error) {
-	// Badger's default value-log file size is 2 GiB which the OS reports as
-	// allocated even when sparse. For an explorer UI 64 MiB segments are
-	// plenty and keep the on-disk size readout sensible.
+	// Cap value-log segments at 64 MiB so the on-disk size readout isn't dominated by Badger's 2 GiB sparse default.
 	o := badgerdb.DefaultOptions(path).
 		WithReadOnly(opts.ReadOnly).
 		WithLoggingLevel(badgerdb.WARNING).

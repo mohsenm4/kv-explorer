@@ -5,10 +5,7 @@ import (
 	"strings"
 )
 
-// DetectEngine inspects a directory's contents and returns the engine that
-// most likely created it. ok is false if the directory is empty or doesn't
-// look like any supported engine — callers should treat that as "fine, use
-// whatever the user picked".
+// DetectEngine returns the engine that most likely created the directory; ok=false means "use whatever the user picked".
 func DetectEngine(path string) (kind EngineKind, ok bool) {
 	entries, err := os.ReadDir(path)
 	if err != nil {

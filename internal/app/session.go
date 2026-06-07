@@ -13,18 +13,12 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// KeyMeta is the lightweight per-row info the UI keeps in memory: the key,
-// its value size, and a short preview string. The preview is computed once
-// at session load and reused so the table doesn't refetch values on every
-// cell render.
 type KeyMeta struct {
 	Key     string
 	Size    int
 	Preview string
 }
 
-// Session represents one open database. Multiple sessions can coexist
-// (one per UI tab once Step 17 lands).
 type Session struct {
 	Engine    kvstore.EngineKind
 	Path      string
@@ -51,8 +45,6 @@ func OpenSession(kind kvstore.EngineKind, path string, opts kvstore.OpenOptions)
 	return s, nil
 }
 
-// Keys returns the cached list of (key, size, preview) tuples sorted by
-// key. The cache is populated on session open and invalidated by Refresh.
 func (s *Session) Keys() ([]KeyMeta, error) {
 	if s.keys != nil {
 		return s.keys, nil
@@ -60,14 +52,10 @@ func (s *Session) Keys() ([]KeyMeta, error) {
 	return s.reloadKeys()
 }
 
-// Value fetches the value bytes for a key directly from the store. Values
-// are never cached at the session level — callers can wrap their own
-// cache if hot lookups warrant it.
 func (s *Session) Value(key []byte) ([]byte, error) {
 	return s.Store.Get(key)
 }
 
-// Refresh re-iterates the store, refreshing the key cache and counts.
 func (s *Session) Refresh() error {
 	_, err := s.reloadKeys()
 	return err
@@ -100,11 +88,6 @@ func (s *Session) Close() error {
 	return s.Store.Close()
 }
 
-// makePreview returns a short one-line preview for the table cell.
-// JSON gets a field-summary like `{id, name, +3}` or `[12 items]` so
-// users can recognise the shape without reading raw braces. Binary content
-// is summarised by MIME and size; other text gets its first ~120 chars
-// with whitespace collapsed.
 func makePreview(v []byte) string {
 	if len(v) == 0 {
 		return ""
@@ -141,14 +124,7 @@ func makePreview(v []byte) string {
 	return s
 }
 
-// jsonPreview returns a structural one-liner for JSON values:
-//   - object  → `{id, name, email, +3}` (first 3 keys, +N for the rest)
-//   - array   → `[12 items]` for non-empty, `[]` for empty
-//   - empty object → `{}`
-//
-// Keys are listed in their on-wire order via json.Decoder so the preview
-// matches what the user sees in the editor. Returns "" if v isn't JSON,
-// letting the caller fall back to the raw-text preview.
+// Returns "" for non-JSON so the caller can fall back to the raw-text preview.
 func jsonPreview(v []byte) string {
 	trimmed := bytes.TrimSpace(v)
 	if len(trimmed) == 0 {
@@ -210,7 +186,6 @@ func topLevelObjectKeys(v []byte) ([]string, error) {
 			return nil, fmt.Errorf("non-string key")
 		}
 		keys = append(keys, k)
-		// Skip the value (could be any JSON).
 		var skip json.RawMessage
 		if err := dec.Decode(&skip); err != nil {
 			return nil, err

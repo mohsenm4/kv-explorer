@@ -3,7 +3,6 @@ package i18n
 import "testing"
 
 func TestT_FallsBackToIDWhenUninitialized(t *testing.T) {
-	// Reset state from any prior test.
 	loc = nil
 	if got := T("nonexistent.key"); got != "nonexistent.key" {
 		t.Errorf("T uninitialized = %q, want id passthrough", got)
@@ -72,13 +71,9 @@ func TestSupportedTag(t *testing.T) {
 }
 
 func TestResolveLanguage_UnknownFallsBackToEnglish(t *testing.T) {
-	// Force a clearly-unsupported locale; result should be "en" (the
-	// final fallback after system detection misses too).
 	got := resolveLanguage("klingon")
 	if got != "en" {
-		// Allow that the OS happens to be one of our supported locales —
-		// in that case resolveLanguage returns the system match, which is
-		// still acceptable. Only flag truly unexpected returns.
+		// OS may match a supported locale; only flag truly unexpected returns.
 		if supportedTag(got) == "" {
 			t.Errorf("resolveLanguage(klingon) = %q, want en or a supported tag", got)
 		}
