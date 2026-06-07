@@ -78,6 +78,7 @@
   "editor.imageInfoPending": "{{.Mime}} · {{.Size}} · pending",
   "editor.hexInfo": "{{.Mime}} · {{.Size}} · hex editable",
   "editor.jsonHint": "Read-only tree view — switch to Text mode to edit.",
+  "editor.timestampHint": "Unix timestamp · {{.Time}}",
   "editor.format.auto": "Auto",
   "editor.format.text": "Text",
   "editor.format.tree": "Tree",

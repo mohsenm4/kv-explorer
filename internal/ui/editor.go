@@ -199,7 +199,16 @@ func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) 
 	be.TextStyle = fyne.TextStyle{Monospace: true}
 	be.Wrapping = fyne.TextWrapBreak
 	be.SetText(displayed)
-	return be,
+
+	body := fyne.CanvasObject(be)
+	if hint := timestampHint(value); hint != "" {
+		muted := themeColor(fyne.CurrentApp().Settings().ThemeVariant(), fynetheme.ColorNamePlaceHolder)
+		label := canvas.NewText(hint, muted)
+		label.TextSize = 11
+		body = container.NewBorder(nil, container.NewPadded(label), nil, nil, be)
+	}
+
+	return body,
 		func() ([]byte, error) {
 			// Untouched text returns the original bytes so JSON pretty-print doesn't silently rewrite on save.
 			if be.Text == displayed {
