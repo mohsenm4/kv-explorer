@@ -320,13 +320,13 @@ func makeFakeWAV() []byte {
 	writeU32LE(buf, uint32(36+dataSize))
 	buf.WriteString("WAVE")
 	buf.WriteString("fmt ")
-	writeU32LE(buf, 16)               // subchunk size
-	writeU16LE(buf, 1)                // PCM
-	writeU16LE(buf, 1)                // channels
-	writeU32LE(buf, sampleRate)       // sample rate
-	writeU32LE(buf, sampleRate*2)     // byte rate
-	writeU16LE(buf, 2)                // block align
-	writeU16LE(buf, 16)               // bits/sample
+	writeU32LE(buf, 16)           // subchunk size
+	writeU16LE(buf, 1)            // PCM
+	writeU16LE(buf, 1)            // channels
+	writeU32LE(buf, sampleRate)   // sample rate
+	writeU32LE(buf, sampleRate*2) // byte rate
+	writeU16LE(buf, 2)            // block align
+	writeU16LE(buf, 16)           // bits/sample
 	buf.WriteString("data")
 	writeU32LE(buf, uint32(dataSize))
 	// Soft sine so the file isn't all zeros.

@@ -15,11 +15,11 @@ func TestBuildPrefixTree(t *testing.T) {
 	got := buildPrefixTree(keys)
 
 	want := map[string][]string{
-		"":                      {"logs/", "meta/", "users/"},
-		"users/":                {"users/0001", "users/0002"},
-		"logs/":                 {"logs/2026-06-03/"},
-		"logs/2026-06-03/":      {"logs/2026-06-03/0001"},
-		"meta/":                 {"meta/created_at"},
+		"":                 {"logs/", "meta/", "users/"},
+		"users/":           {"users/0001", "users/0002"},
+		"logs/":            {"logs/2026-06-03/"},
+		"logs/2026-06-03/": {"logs/2026-06-03/0001"},
+		"meta/":            {"meta/created_at"},
 	}
 	for parent, expect := range want {
 		if !reflect.DeepEqual(got[parent], expect) {

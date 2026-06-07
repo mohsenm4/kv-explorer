@@ -24,9 +24,9 @@ type ToolbarActions struct {
 // toolbarHandles lets the parent flip Edit/Delete enable state when the
 // table selection changes.
 type toolbarHandles struct {
-	bar        fyne.CanvasObject
-	editBtn    *widget.Button
-	deleteBtn  *widget.Button
+	bar       fyne.CanvasObject
+	editBtn   *widget.Button
+	deleteBtn *widget.Button
 }
 
 func buildToolbar(actions ToolbarActions) toolbarHandles {
