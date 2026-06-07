@@ -11,8 +11,7 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// ToolbarActions groups the callbacks the top toolbar can fire. nil
-// callbacks render their button as disabled.
+// ToolbarActions groups toolbar callbacks; nil callbacks render as disabled buttons.
 type ToolbarActions struct {
 	OnOpen     func()
 	OnClose    func()
@@ -23,8 +22,7 @@ type ToolbarActions struct {
 	OnSettings func()
 }
 
-// toolbarHandles lets the parent flip Edit/Delete enable state when the
-// table selection changes.
+// toolbarHandles lets the parent flip Edit/Delete enable state on selection change.
 type toolbarHandles struct {
 	bar       fyne.CanvasObject
 	editBtn   *widget.Button

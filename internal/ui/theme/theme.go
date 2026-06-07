@@ -11,8 +11,7 @@ type Theme struct{}
 
 func New() fyne.Theme { return Theme{} }
 
-// ForcedVariant wraps a base theme and forces every color lookup to use the
-// given variant, ignoring whatever variant Fyne would otherwise pass in.
+// ForcedVariant pins every color lookup to v, ignoring Fyne's passed-in variant.
 func ForcedVariant(base fyne.Theme, v fyne.ThemeVariant) fyne.Theme {
 	return &forcedVariantTheme{base: base, variant: v}
 }
@@ -72,7 +71,7 @@ var sizes = map[fyne.ThemeSizeName]float32{
 func rgb(r, g, b uint8) color.NRGBA     { return color.NRGBA{R: r, G: g, B: b, A: 0xFF} }
 func rgba(r, g, b, a uint8) color.NRGBA { return color.NRGBA{R: r, G: g, B: b, A: a} }
 
-// DBAccentTint returns DBAccent at ~20% opacity, for chip backgrounds.
+// DBAccentTint returns DBAccent at ~20% opacity for chip backgrounds.
 func DBAccentTint(engine string, v fyne.ThemeVariant) color.Color {
 	c, ok := DBAccent(engine, v).(color.NRGBA)
 	if !ok {
@@ -82,9 +81,7 @@ func DBAccentTint(engine string, v fyne.ThemeVariant) color.Color {
 	return c
 }
 
-// DBAccent returns the accent color for a database engine, per spec §2.3.
-// The `engine` string should match the kvstore.EngineKind values
-// ("pebble", "badger", "leveldb"). Unknown engines fall back to placeholder.
+// DBAccent returns the engine accent color (per spec §2.3); engine matches kvstore.EngineKind values, unknown falls back to placeholder.
 func DBAccent(engine string, v fyne.ThemeVariant) color.Color {
 	dark := v == fynetheme.VariantDark
 	switch engine {

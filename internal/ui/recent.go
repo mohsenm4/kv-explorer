@@ -21,7 +21,6 @@ type recentEntry struct {
 	when   time.Time
 }
 
-// recentsFromConfig converts the persisted entries into the ui-level form.
 func recentsFromConfig(rs []config.Recent) []recentEntry {
 	out := make([]recentEntry, 0, len(rs))
 	for _, r := range rs {
@@ -30,8 +29,6 @@ func recentsFromConfig(rs []config.Recent) []recentEntry {
 	return out
 }
 
-// showRecentMenu pops up a dropdown anchored below anchor with one item
-// per recent. Picking an item calls onPick with that entry.
 func showRecentMenu(parent fyne.Window, anchor fyne.CanvasObject, entries []recentEntry, onPick func(recentEntry)) {
 	if len(entries) == 0 {
 		return
@@ -88,9 +85,7 @@ func recentRow(v fyne.ThemeVariant, fg, muted color.Color, e recentEntry, onPick
 	})
 }
 
-// middleTruncate shortens a long path by collapsing its middle to "…"
-// so both the prefix (e.g. "~/Desktop") and the leaf (db name) stay
-// visible. n is the target visible character count.
+// middleTruncate collapses the middle of a path to "…" so both prefix and leaf stay visible; n is the target visible length.
 func middleTruncate(s string, n int) string {
 	if len(s) <= n {
 		return s

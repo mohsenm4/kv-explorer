@@ -18,14 +18,10 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// showAddKey opens the Add key dialog. onSaved fires after a successful
-// write so the parent can refresh views.
 func showAddKey(parent fyne.Window, sess *app.Session, onSaved func()) {
 	showKeyDialog(parent, sess, i18n.T("addKey.title"), nil, nil, onSaved)
 }
 
-// showEditKey opens the Edit key dialog prefilled with the entry's
-// current key and value.
 func showEditKey(parent fyne.Window, sess *app.Session, entry kvstore.Entry, onSaved func()) {
 	showKeyDialog(parent, sess, i18n.T("editKey.title"), entry.Key, entry.Value, onSaved)
 }
@@ -44,8 +40,6 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	keyMode.SetSelected(textLabel)
 
 	if editing {
-		// Default key mode based on whether oldKey is valid UTF-8 without
-		// control bytes — hash-like binary keys land in Hex.
 		if _, mime := DetectContent(oldKey); strings.HasPrefix(mime, "text/") {
 			keyEntry.SetText(string(oldKey))
 		} else {
@@ -59,10 +53,7 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	valueEntry.Wrapping = fyne.TextWrapBreak
 	valueEntry.SetPlaceHolder(i18n.T("keyDialog.valuePlaceholder"))
 
-	// File-upload state: when non-nil, the dialog will write these bytes
-	// instead of the value entry's text. For Edit on a binary value we
-	// pre-stage the existing bytes so we never try to render megabytes of
-	// garbled text inside MultiLineEntry.
+	// On Edit, pre-stage binary values so we never try to render megabytes of garbled text in MultiLineEntry.
 	var staged []byte
 	autoStage := false
 	if editing {
@@ -207,8 +198,6 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 			return
 		}
 
-		// Duplicate check — only matters when adding or when the edit
-		// changed the key.
 		if !editing || string(key) != string(oldKey) {
 			if _, err := sess.Store.Get(key); err == nil {
 				dialog.ShowError(errors.New(i18n.Tf("keyDialog.error.duplicateKey", map[string]any{"Key": fmt.Sprintf("%q", string(key))})), parent)
@@ -246,7 +235,6 @@ func showKeyDialog(parent fyne.Window, sess *app.Session, title string, oldKey, 
 	d.Show()
 }
 
-// parseKey converts the raw entry text into bytes given the selected mode.
 func parseKey(text, mode string) ([]byte, error) {
 	if mode == "Hex" {
 		clean := strings.Map(func(r rune) rune {

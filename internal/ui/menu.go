@@ -8,9 +8,6 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// mainMenu builds the File/Edit/View/Help menu. On macOS Fyne renders this
-// in the system menu bar (top of screen); on Linux/Windows it sits inside
-// the window as a strip under the title bar.
 func mainMenu(s *AppState) *fyne.MainMenu {
 	w := s.w
 

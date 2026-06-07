@@ -48,9 +48,7 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 				return
 			}
 			path.SetText(uri.Path())
-			// Engine mismatch is caught by the confirm step below; we
-			// deliberately don't auto-switch the radio so the user's
-			// choice stays explicit.
+			// Engine mismatch is caught at confirm; we don't auto-switch so the user's choice stays explicit.
 		}, parent)
 	})
 
@@ -89,8 +87,7 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 			NewTab:   newTab.Checked,
 			ReadOnly: readOnly.Checked,
 		}
-		// Safety net for typed paths: if the folder looks like a
-		// different engine, ask before trying to open with the wrong one.
+		// If a typed path looks like a different engine, confirm before opening with the wrong one.
 		if detected, ok := kvstore.DetectEngine(path.Text); ok && detected != kind {
 			dialog.ShowConfirm(
 				i18n.T("openDialog.engineMismatch.title"),

@@ -18,15 +18,12 @@ import (
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
 
-// welcomeStatusBar shows "No database open" with the theme toggle on the right.
 func welcomeStatusBar(v fyne.ThemeVariant, onToggle func()) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	msg := caption(i18n.T("status.noDatabase"), muted)
 	return statusBarShell(v, container.NewPadded(msg), themeToggle(v, onToggle))
 }
 
-// mainStatusBar shows engine dot + name + key count + size + path on the
-// left, theme toggle on the right.
 func mainStatusBar(v fyne.ThemeVariant, sess *app.Session, onToggle func()) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	accent := apptheme.DBAccent(string(sess.Engine), v)

@@ -14,8 +14,6 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// showDeleteKey asks the user to confirm a destructive delete of a single
-// key. onDeleted runs after a successful delete.
 func showDeleteKey(parent fyne.Window, sess *app.Session, key []byte, onDeleted func()) {
 	th := fyne.CurrentApp().Settings().Theme()
 	v := fyne.CurrentApp().Settings().ThemeVariant()
@@ -63,8 +61,6 @@ func showDeleteKey(parent fyne.Window, sess *app.Session, key []byte, onDeleted 
 	d.Show()
 }
 
-// displayKey formats a key for human display — text when valid UTF-8,
-// otherwise a short hex prefix.
 func displayKey(k []byte) string {
 	if _, mime := DetectContent(k); strings.HasPrefix(mime, "text/") {
 		return string(k)

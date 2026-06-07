@@ -13,16 +13,11 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// FilterState carries the current filter query. Mode is a placeholder for
-// the future picker (prefix / substring / regex / value) — for now every
-// query is treated as a case-sensitive key substring.
+// FilterState carries the current filter query. Treated as case-sensitive key substring; picker for prefix/regex/value modes is future work.
 type FilterState struct {
 	Query string
 }
 
-// filterRow returns the search row that sits above the key table plus the
-// Entry widget itself so shortcuts can focus it.
-// onChange fires (debounced) after the user stops typing.
 func filterRow(state *FilterState, onChange func()) (fyne.CanvasObject, *widget.Entry) {
 	entry := widget.NewEntry()
 	entry.SetPlaceHolder(i18n.T("filter.placeholder"))
@@ -53,7 +48,6 @@ func filterRow(state *FilterState, onChange func()) (fyne.CanvasObject, *widget.
 	return container.NewBorder(nil, nil, nil, filterBtn, search), entry
 }
 
-// applyFilter returns the subset of keys that match the filter state.
 func applyFilter(keys []app.KeyMeta, state FilterState) []app.KeyMeta {
 	q := state.Query
 	if q == "" {

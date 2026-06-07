@@ -10,14 +10,11 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// SettingsHandlers groups callbacks the Settings dialog can fire so it
-// stays decoupled from the rest of the UI state.
 type SettingsHandlers struct {
 	OnTheme    func(string) // "light" | "dark" | "system"
 	OnLanguage func(string) // BCP-47 tag, or "" for system default
 }
 
-// showSettings opens the tabbed Settings dialog.
 func showSettings(parent fyne.Window, currentTheme, currentLang string, handlers SettingsHandlers) {
 	tabs := container.NewAppTabs(
 		container.NewTabItem(i18n.T("settings.tab.appearance"), pane(appearancePane(currentTheme, currentLang, handlers))),
@@ -33,8 +30,6 @@ func showSettings(parent fyne.Window, currentTheme, currentLang string, handlers
 	d.Show()
 }
 
-// pane wraps a settings tab body so its content doesn't touch the
-// vertical tab strip and gets breathing room on every side.
 func pane(content fyne.CanvasObject) fyne.CanvasObject {
 	return container.NewPadded(container.NewPadded(content))
 }

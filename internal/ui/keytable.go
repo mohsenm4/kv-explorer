@@ -9,10 +9,7 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// keyTable renders the central table of key / value preview / size. It
-// caches the filtered slice between cell renders so applyFilter doesn't
-// run 90+ times per refresh.
-// onSelect fires with the row's key + freshly-fetched value.
+// Filtered rows are cached between cell renders so applyFilter doesn't run 90+ times per refresh.
 func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entry)) *widget.Table {
 	headers := []string{
 		i18n.T("table.header.key"),

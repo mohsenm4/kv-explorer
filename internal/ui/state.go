@@ -11,9 +11,6 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// AppState is the single source of truth for cross-cutting UI state
-// (open sessions, active tab, theme, config). Pages and shortcuts read
-// fields and call methods on it instead of threading callbacks.
 type AppState struct {
 	a fyne.App
 	w fyne.Window
@@ -25,16 +22,10 @@ type AppState struct {
 	variant   fyne.ThemeVariant
 	version   string
 
-	// Page callbacks (filled by mainPage on render, cleared on welcome).
-	page pageHandlers
-
-	// notify triggers a full re-render. Set once by Run.
+	page   pageHandlers
 	notify func()
 }
 
-// pageHandlers groups the per-page actions that canvas shortcuts fire.
-// Only mainPage knows the current selection / filter widget, so it
-// installs these on render and welcome clears them.
 type pageHandlers struct {
 	addKey      func()
 	editKey     func()
@@ -58,8 +49,6 @@ func NewAppState(a fyne.App, w fyne.Window) *AppState {
 	}
 }
 
-// SetNotify wires the render callback. Mutations call s.notify() to
-// trigger a re-render without knowing what's on screen.
 func (s *AppState) SetNotify(fn func()) { s.notify = fn }
 
 func (s *AppState) SetVersion(v string) { s.version = v }
@@ -70,8 +59,6 @@ func (s *AppState) Notify() {
 		s.notify()
 	}
 }
-
-// Theme ----------------------------------------------------------------
 
 func (s *AppState) Variant() fyne.ThemeVariant { return s.variant }
 func (s *AppState) ThemePref() string          { return s.themePref }
@@ -96,8 +83,6 @@ func (s *AppState) ToggleTheme() {
 		s.SetTheme("dark")
 	}
 }
-
-// Sessions / tabs ------------------------------------------------------
 
 func (s *AppState) Sessions() []*app.Session { return s.sessions }
 func (s *AppState) ActiveIdx() int           { return s.active }
@@ -178,8 +163,6 @@ func (s *AppState) CycleTab() {
 	s.SelectTab((s.active + 1) % len(s.sessions))
 }
 
-// Dialog launchers -----------------------------------------------------
-
 func (s *AppState) ShowOpenDialog() {
 	showOpenDatabase(s.w, s.OpenSession)
 }
@@ -198,8 +181,6 @@ func (s *AppState) ShowSettings() {
 	})
 }
 
-// SetLanguage updates the active translation catalog, persists the raw
-// preference, and re-renders so visible labels swap in place.
 func (s *AppState) SetLanguage(pref string) {
 	i18n.SetLanguage(pref)
 	s.cfg.Language = pref
@@ -208,10 +189,6 @@ func (s *AppState) SetLanguage(pref string) {
 	s.Notify()
 }
 
-// Page callbacks -------------------------------------------------------
-
-// SetPageHandlers is called by mainPage with the selection-aware actions.
-// Welcome clears them via ClearPageHandlers.
 func (s *AppState) SetPageHandlers(h pageHandlers) { s.page = h }
 
 func (s *AppState) ClearPageHandlers() { s.page = pageHandlers{} }
@@ -227,8 +204,6 @@ func fire(fn func()) {
 		fn()
 	}
 }
-
-// Config / window ------------------------------------------------------
 
 func (s *AppState) Recents() []config.Recent { return s.cfg.Recents }
 

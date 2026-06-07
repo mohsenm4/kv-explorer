@@ -8,7 +8,6 @@ import (
 	"unicode/utf8"
 )
 
-// ContentKind is the broad category we use to pick an editor body.
 type ContentKind int
 
 const (
@@ -17,9 +16,6 @@ const (
 	KindBinary
 )
 
-// DetectContent inspects value bytes and returns its kind plus a best-effort
-// MIME type. It uses http.DetectContentType for magic-byte sniffing and
-// falls back to a UTF-8 + control-byte check to catch generic text.
 func DetectContent(v []byte) (ContentKind, string) {
 	if len(v) == 0 {
 		return KindText, "text/plain"
@@ -33,8 +29,7 @@ func DetectContent(v []byte) (ContentKind, string) {
 	case mime == "application/json":
 		return KindText, mime
 	case mime == "application/zip":
-		// ZIP is a container — xlsx/docx/pptx/odt/epub/jar all sniff as
-		// application/zip. Peek inside to return the real type.
+		// xlsx/docx/pptx/odt/epub/jar all sniff as application/zip; peek inside for the real type.
 		return KindBinary, refineZipMIME(v)
 	case utf8.Valid(v) && !hasControlBytes(v):
 		return KindText, "text/plain"
@@ -43,9 +38,6 @@ func DetectContent(v []byte) (ContentKind, string) {
 	}
 }
 
-// refineZipMIME inspects a ZIP archive's entries and returns a more specific
-// MIME type for known ZIP-based container formats (OOXML, ODF, EPUB, JAR).
-// Returns "application/zip" if the archive is plain or unreadable.
 func refineZipMIME(v []byte) string {
 	r, err := zip.NewReader(bytes.NewReader(v), int64(len(v)))
 	if err != nil {
@@ -69,7 +61,6 @@ func refineZipMIME(v []byte) string {
 		}
 		break
 	}
-	// OOXML (Office) and JAR — recognized by directory prefixes.
 	for _, f := range r.File {
 		switch {
 		case strings.HasPrefix(f.Name, "xl/"):
@@ -85,8 +76,6 @@ func refineZipMIME(v []byte) string {
 	return "application/zip"
 }
 
-// hasControlBytes reports whether the slice contains any C0 control byte
-// other than the standard whitespace ones (tab, LF, CR).
 func hasControlBytes(v []byte) bool {
 	for _, b := range v {
 		if b < 0x09 || (b > 0x0d && b < 0x20) {

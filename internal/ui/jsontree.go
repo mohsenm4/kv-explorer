@@ -15,12 +15,7 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
-// jsonTreeBody renders a collapsible tree view of a JSON value. Each node
-// shows `key: value` for leaves and `key: {N fields}` / `key: [N items]`
-// for branches. The view is read-only — to edit, the user switches to
-// Text mode where they get the raw indented JSON.
-//
-// Falls back to textBody if the bytes don't parse as JSON.
+// Read-only tree view; falls back to textBody on invalid JSON.
 func jsonTreeBody(v fyne.ThemeVariant, value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) {
 	dec := json.NewDecoder(strings.NewReader(string(value)))
 	dec.UseNumber()
@@ -29,15 +24,12 @@ func jsonTreeBody(v fyne.ThemeVariant, value []byte) (fyne.CanvasObject, func() 
 		return textBody(value)
 	}
 
-	// orderedObj preserves field order from the source bytes. Go's
-	// json.Unmarshal into map[string]any drops order, which makes the tree
-	// jump around between renders — frustrating when comparing keys.
+	// Decoded manually because map[string]any loses field order and the tree would shuffle between renders.
 	type orderedObj struct {
 		keys []string
 		vals map[string]any
 	}
 
-	// Re-decode preserving order by walking tokens manually.
 	var decodeOrdered func(d *json.Decoder) (any, error)
 	decodeOrdered = func(d *json.Decoder) (any, error) {
 		tok, err := d.Token()
@@ -62,7 +54,7 @@ func jsonTreeBody(v fyne.ThemeVariant, value []byte) (fyne.CanvasObject, func() 
 					obj.keys = append(obj.keys, k)
 					obj.vals[k] = val
 				}
-				if _, err := d.Token(); err != nil { // consume '}'
+				if _, err := d.Token(); err != nil {
 					return nil, err
 				}
 				return obj, nil
@@ -153,7 +145,7 @@ func jsonTreeBody(v fyne.ThemeVariant, value []byte) (fyne.CanvasObject, func() 
 			c.(*widget.Label).SetText(nodes[id].label)
 		},
 	)
-	tree.OpenBranch("") // expand the root so users see top-level structure immediately
+	tree.OpenBranch("")
 
 	hint := canvas.NewText(i18n.T("editor.jsonHint"), muted)
 	hint.TextSize = 11

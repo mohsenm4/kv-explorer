@@ -20,10 +20,6 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
-// valueEditor renders the editable value pane for a single entry. A
-// Format toggle (Auto / Text / Hex / Image) lets the user pick a body
-// regardless of the auto-detected content kind. Save commits the staged
-// bytes; Cancel reverts to the original.
 func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, entry kvstore.Entry, onSaved func()) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	fg := themeColor(v, fynetheme.ColorNameForeground)
@@ -138,10 +134,7 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 			dialog.ShowError(err, parent)
 			return
 		}
-		// Truncation guard: the visible buffer is a slice of the
-		// original in both Text (>displayValueMax) and Hex
-		// (>hexEditFormatMax) modes. Saving without a confirm would
-		// silently destroy the tail.
+		// In Text/Hex modes the visible buffer is truncated; saving without a confirm would lose the tail.
 		mode := labelToID[format.Selected]
 		isTextMode := mode == "Text" || (mode == "Auto" && detected == KindText)
 		isHexMode := mode == "Hex" || (mode == "Auto" && detected == KindBinary)
@@ -206,14 +199,9 @@ func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) 
 	be.TextStyle = fyne.TextStyle{Monospace: true}
 	be.Wrapping = fyne.TextWrapBreak
 	be.SetText(displayed)
-	// Editable even when truncated. The outer Save handler warns before
-	// overwriting a much larger original.
 	return be,
 		func() ([]byte, error) {
-			// If the user didn't touch the text, return the original
-			// bytes verbatim. Without this, displayValue's JSON
-			// pretty-print would silently rewrite on-disk JSON to its
-			// indented form on every open-and-save.
+			// Untouched text returns the original bytes so JSON pretty-print doesn't silently rewrite on save.
 			if be.Text == displayed {
 				return value, nil
 			}
@@ -222,10 +210,6 @@ func textBody(value []byte) (fyne.CanvasObject, func() ([]byte, error), func()) 
 		func() { be.SetText(displayed) }
 }
 
-// imageBody renders an image preview plus a Replace… button that stages
-// new bytes. Save commits staged → store; Cancel reverts to the original.
-// Replace accepts any file, so picking a text/.txt also works — after
-// save the next selection will auto-detect the new content.
 func imageBody(v fyne.ThemeVariant, parent fyne.Window, value []byte, mime string) (fyne.CanvasObject, func() ([]byte, error), func()) {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 
@@ -323,9 +307,7 @@ func hexBody(v fyne.ThemeVariant, value []byte, mime string) (fyne.CanvasObject,
 	return body, current, resetFn
 }
 
-// hexEditFormatMax caps how many bytes the hex editor renders so huge
-// values don't choke the text widget. Edits stay valid as long as the
-// user keeps total bytes ≤ this many.
+// Cap on hex editor render so MultiLineEntry (non-virtualised) doesn't choke on huge values.
 const hexEditFormatMax = 4096
 
 func hexEditFormat(v []byte) string {
@@ -351,17 +333,9 @@ func hexEditFormat(v []byte) string {
 	return sb.String()
 }
 
-// displayValueMax caps text-mode rendering so Fyne's MultiLineEntry
-// doesn't have to lay out megabytes of glyphs (it isn't virtualised). 16
-// KiB is the largest the widget renders without noticeable lag.
-// Values larger than this are shown read-only with a note pointing at
-// Export for external editing.
+// 16 KiB is the largest MultiLineEntry renders without lag (it isn't virtualised).
 const displayValueMax = 16 * 1024
 
-// suggestedExportName returns a filename derived from the key with the
-// extension that matches the value's content type. Slashes in the key
-// become underscores so the result is a single file. Keys that already
-// look like they have an extension keep it; otherwise we sniff the bytes.
 func suggestedExportName(key, value []byte) string {
 	name := strings.ReplaceAll(string(key), "/", "_")
 	if name == "" {
@@ -415,9 +389,6 @@ func extensionForBytes(v []byte) string {
 	}
 }
 
-// displayValue returns the value as a string, pretty-printed if it's JSON.
-// Values larger than displayValueMax are truncated so the editor stays
-// responsive.
 func displayValue(v []byte) string {
 	if len(v) > displayValueMax {
 		return string(v[:displayValueMax]) +
@@ -431,7 +402,6 @@ func displayValue(v []byte) string {
 	return string(v)
 }
 
-// emptyEditor is the placeholder shown before any row is selected.
 func emptyEditor(v fyne.ThemeVariant) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	t := canvas.NewText(i18n.T("editor.placeholder"), muted)

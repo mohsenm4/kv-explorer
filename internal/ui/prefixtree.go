@@ -10,10 +10,7 @@ import (
 	"github.com/mohsenm4/kv-explorer/internal/app"
 )
 
-// prefixTree builds the left-pane navigation tree by grouping keys on "/"
-// boundaries. Branch IDs end with "/", leaf IDs are the full key.
-// onSelect fires when the user picks a leaf (Step 9 will wire it into the
-// editor).
+// prefixTree groups keys on "/" boundaries. Branch IDs end with "/", leaf IDs are the full key.
 func prefixTree(sess *app.Session, onSelect func(key []byte)) fyne.CanvasObject {
 	metas, err := sess.Keys()
 	if err != nil {
@@ -55,8 +52,6 @@ func prefixTree(sess *app.Session, onSelect func(key []byte)) fyne.CanvasObject 
 	return t
 }
 
-// buildPrefixTree returns a map from parent node ID to its sorted children.
-// Root parent is the empty string. Branch IDs always end with "/".
 func buildPrefixTree(keys []string) map[string][]string {
 	dedup := map[string]map[string]struct{}{"": {}}
 
@@ -95,9 +90,6 @@ func buildPrefixTree(keys []string) map[string][]string {
 	return out
 }
 
-// treeLabel formats a node ID into the short display label shown in the row.
-// Branches show their last segment with a trailing "/"; leaves show only
-// their last segment.
 func treeLabel(id string) string {
 	if id == "" {
 		return ""
