@@ -112,6 +112,10 @@ func makePreview(v []byte) string {
 		return jp
 	}
 
+	if tag := patternTag(v); tag != "" {
+		return tag
+	}
+
 	const max = 120
 	limit := max * 4
 	if len(v) < limit {
