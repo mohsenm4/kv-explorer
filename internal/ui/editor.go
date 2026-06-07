@@ -5,6 +5,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"io"
 	"strings"
 
@@ -221,22 +225,14 @@ func imageBody(v fyne.ThemeVariant, parent fyne.Window, value []byte, mime strin
 	img.FillMode = canvas.ImageFillContain
 	img.SetMinSize(fyne.NewSize(200, 200))
 
-	info := canvas.NewText(i18n.Tf("editor.imageInfo", map[string]any{
-		"Mime": mime,
-		"Size": humanSize(int64(len(value))),
-	}), muted)
+	info := canvas.NewText(imageInfoText(mime, value, false), muted)
 	info.TextSize = 11
 
 	refreshPreview := func() {
 		img.Resource = fyne.NewStaticResource("value", staged)
 		img.Refresh()
 		_, m := DetectContent(staged)
-		data := map[string]any{"Mime": m, "Size": humanSize(int64(len(staged)))}
-		if pending {
-			info.Text = i18n.Tf("editor.imageInfoPending", data)
-		} else {
-			info.Text = i18n.Tf("editor.imageInfo", data)
-		}
+		info.Text = imageInfoText(m, staged, pending)
 		info.Refresh()
 	}
 
@@ -305,6 +301,33 @@ func hexBody(v fyne.ThemeVariant, value []byte, mime string) (fyne.CanvasObject,
 	}
 	resetFn := func() { text.SetText(hexEditFormat(value)) }
 	return body, current, resetFn
+}
+
+// imageInfoText picks the i18n template with dimensions when DecodeConfig
+// succeeds, otherwise falls back to mime + size.
+func imageInfoText(mime string, value []byte, pending bool) string {
+	w, h, ok := imageDimensions(value)
+	data := map[string]any{"Mime": mime, "Size": humanSize(int64(len(value)))}
+	if ok {
+		data["Width"] = w
+		data["Height"] = h
+		if pending {
+			return i18n.Tf("editor.imageInfoDimsPending", data)
+		}
+		return i18n.Tf("editor.imageInfoDims", data)
+	}
+	if pending {
+		return i18n.Tf("editor.imageInfoPending", data)
+	}
+	return i18n.Tf("editor.imageInfo", data)
+}
+
+func imageDimensions(v []byte) (int, int, bool) {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(v))
+	if err != nil {
+		return 0, 0, false
+	}
+	return cfg.Width, cfg.Height, true
 }
 
 // Cap on hex editor render so MultiLineEntry (non-virtualised) doesn't choke on huge values.
