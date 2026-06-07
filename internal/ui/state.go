@@ -181,7 +181,9 @@ func (s *AppState) ShowSettings() {
 		OnLanguage: func(pref string) {
 			s.SetLanguage(pref)
 			// Rebuild the Settings dialog so its own labels swap to the new language.
-			d.Hide()
+			if d != nil {
+				d.Hide()
+			}
 			s.ShowSettings()
 		},
 	})

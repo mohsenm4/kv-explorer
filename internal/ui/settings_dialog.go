@@ -87,16 +87,22 @@ func appearancePane(currentTheme, currentLang string, h SettingsHandlers) fyne.C
 		labelByCode[c.Code] = lbl
 		codeByLabel[lbl] = c.Code
 	}
-	langSelect := widget.NewSelect(labels, func(s string) {
-		if h.OnLanguage == nil {
-			return
-		}
-		h.OnLanguage(codeByLabel[s])
-	})
+	// Callback attached after SetSelected so the initial selection doesn't fire the language switch (the dialog reference isn't ready yet).
+	langSelect := widget.NewSelect(labels, nil)
 	if lbl, ok := labelByCode[currentLang]; ok {
 		langSelect.SetSelected(lbl)
 	} else {
 		langSelect.SetSelected(labelByCode[i18n.SystemTag])
+	}
+	langSelect.OnChanged = func(s string) {
+		if h.OnLanguage == nil {
+			return
+		}
+		code := codeByLabel[s]
+		if code == currentLang {
+			return
+		}
+		h.OnLanguage(code)
 	}
 
 	return container.NewVBox(
