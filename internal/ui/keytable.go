@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
@@ -13,7 +14,11 @@ import (
 // run 90+ times per refresh.
 // onSelect fires with the row's key + freshly-fetched value.
 func keyTable(sess *app.Session, filter *FilterState, onSelect func(kvstore.Entry)) *widget.Table {
-	headers := []string{"Key", "Value preview", "Size"}
+	headers := []string{
+		i18n.T("table.header.key"),
+		i18n.T("table.header.valuePreview"),
+		i18n.T("table.header.size"),
+	}
 
 	type cacheKey struct {
 		n int

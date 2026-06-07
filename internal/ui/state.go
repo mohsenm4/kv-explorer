@@ -7,6 +7,7 @@ import (
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
 	"github.com/mohsenm4/kv-explorer/internal/config"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
@@ -110,7 +111,7 @@ func (s *AppState) Active() *app.Session {
 
 func (s *AppState) OpenSession(req OpenRequest) {
 	var sess *app.Session
-	withProgress(s.w, "Opening database…", func() error {
+	withProgress(s.w, i18n.T("progress.opening"), func() error {
 		var err error
 		sess, err = app.OpenSession(req.Engine, req.Path, kvstore.OpenOptions{ReadOnly: req.ReadOnly})
 		return err
@@ -191,7 +192,20 @@ func (s *AppState) ShowOpenDialogNewTab() {
 }
 
 func (s *AppState) ShowSettings() {
-	showSettings(s.w, s.themePref, SettingsHandlers{OnTheme: s.SetTheme})
+	showSettings(s.w, s.themePref, i18n.Chosen(), SettingsHandlers{
+		OnTheme:    s.SetTheme,
+		OnLanguage: s.SetLanguage,
+	})
+}
+
+// SetLanguage updates the active translation catalog, persists the raw
+// preference, and re-renders so visible labels swap in place.
+func (s *AppState) SetLanguage(pref string) {
+	i18n.SetLanguage(pref)
+	s.cfg.Language = pref
+	s.Persist()
+	s.w.SetTitle(i18n.T("app.name"))
+	s.Notify()
 }
 
 // Page callbacks -------------------------------------------------------

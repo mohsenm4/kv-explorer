@@ -8,6 +8,7 @@ import (
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 	apptheme "github.com/mohsenm4/kv-explorer/internal/ui/theme"
 )
@@ -63,7 +64,7 @@ func mainPage(s *AppState) fyne.CanvasObject {
 	}
 
 	refreshAll := func() {
-		withProgress(w, "Refreshing…", func() error {
+		withProgress(w, i18n.T("progress.refreshing"), func() error {
 			return sess.Refresh()
 		}, func(err error) {
 			table.Refresh()

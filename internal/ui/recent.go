@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/config"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
 type recentEntry struct {
@@ -55,7 +56,7 @@ func buildRecentBlock(v fyne.ThemeVariant, fg, muted color.Color, entries []rece
 	if len(entries) == 0 {
 		return container.NewWithoutLayout()
 	}
-	heading := canvas.NewText("RECENT", muted)
+	heading := canvas.NewText(i18n.T("welcome.recent"), muted)
 	heading.TextSize = 11
 	heading.TextStyle = fyne.TextStyle{Bold: true}
 
@@ -108,15 +109,15 @@ func relTime(t time.Time) string {
 	d := time.Since(t)
 	switch {
 	case d < time.Minute:
-		return "just now"
+		return i18n.T("time.justNow")
 	case d < time.Hour:
-		return fmt.Sprintf("%dm ago", int(d.Minutes()))
+		return i18n.Tf("time.minutesAgo", map[string]any{"Count": int(d.Minutes())})
 	case d < 24*time.Hour:
-		return fmt.Sprintf("%dh ago", int(d.Hours()))
+		return i18n.Tf("time.hoursAgo", map[string]any{"Count": int(d.Hours())})
 	case d < 48*time.Hour:
-		return "yesterday"
+		return i18n.T("time.yesterday")
 	case d < 7*24*time.Hour:
-		return fmt.Sprintf("%dd ago", int(d.Hours()/24))
+		return i18n.Tf("time.daysAgo", map[string]any{"Count": int(d.Hours() / 24)})
 	default:
 		return t.Format("Jan 2")
 	}

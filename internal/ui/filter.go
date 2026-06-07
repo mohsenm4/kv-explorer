@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
 // FilterState carries the current filter query. Mode is a placeholder for
@@ -24,7 +25,7 @@ type FilterState struct {
 // onChange fires (debounced) after the user stops typing.
 func filterRow(state *FilterState, onChange func()) (fyne.CanvasObject, *widget.Entry) {
 	entry := widget.NewEntry()
-	entry.SetPlaceHolder("Filter keys…")
+	entry.SetPlaceHolder(i18n.T("filter.placeholder"))
 
 	var timer *time.Timer
 	entry.OnChanged = func(s string) {
@@ -44,7 +45,7 @@ func filterRow(state *FilterState, onChange func()) (fyne.CanvasObject, *widget.
 	leading := widget.NewIcon(fynetheme.SearchIcon())
 	search := container.NewBorder(nil, nil, container.NewPadded(leading), nil, entry)
 
-	filterBtn := widget.NewButtonWithIcon("Filter", fynetheme.MenuExpandIcon(), func() {
+	filterBtn := widget.NewButtonWithIcon(i18n.T("filter.button"), fynetheme.MenuExpandIcon(), func() {
 		// TODO: picker for prefix / substring / regex / value modes
 	})
 	filterBtn.IconPlacement = widget.ButtonIconLeadingText

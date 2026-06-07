@@ -12,7 +12,8 @@ import (
 // Config is the persisted user state. It lives at
 // ~/.kvexplorer/config.json. Missing fields fall back to zero values.
 type Config struct {
-	Theme        string   `json:"theme,omitempty"` // "light" | "dark" | "system"
+	Theme        string   `json:"theme,omitempty"`    // "light" | "dark" | "system"
+	Language     string   `json:"language,omitempty"` // BCP-47 tag; "" means follow OS locale
 	WindowWidth  float32  `json:"window_width,omitempty"`
 	WindowHeight float32  `json:"window_height,omitempty"`
 	Recents      []Recent `json:"recents,omitempty"`

@@ -11,6 +11,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 )
 
 // jsonTreeBody renders a collapsible tree view of a JSON value. Each node
@@ -153,7 +155,7 @@ func jsonTreeBody(v fyne.ThemeVariant, value []byte) (fyne.CanvasObject, func() 
 	)
 	tree.OpenBranch("") // expand the root so users see top-level structure immediately
 
-	hint := canvas.NewText("Read-only tree view — switch to Text mode to edit.", muted)
+	hint := canvas.NewText(i18n.T("editor.jsonHint"), muted)
 	hint.TextSize = 11
 
 	body := container.NewBorder(nil, container.NewPadded(hint), nil, nil, tree)

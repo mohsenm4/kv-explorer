@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"fmt"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -11,6 +9,7 @@ import (
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
@@ -40,7 +39,7 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 	engine.SetSelected(labels[0])
 
 	path := widget.NewEntry()
-	path.SetPlaceHolder("/path/to/database")
+	path.SetPlaceHolder(i18n.T("openDialog.pathPlaceholder"))
 	path.TextStyle = fyne.TextStyle{Monospace: true}
 
 	pick := widget.NewButtonWithIcon("", fynetheme.FolderOpenIcon(), func() {
@@ -57,15 +56,15 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 
 	pathRow := container.NewBorder(nil, nil, nil, pick, path)
 
-	newTab := widget.NewCheck("Open in new tab", nil)
+	newTab := widget.NewCheck(i18n.T("openDialog.openInNewTab"), nil)
 	newTab.SetChecked(true)
-	readOnly := widget.NewCheck("Read-only", nil)
+	readOnly := widget.NewCheck(i18n.T("openDialog.readOnly"), nil)
 
 	body := container.NewVBox(
-		sectionLabel("Engine"),
+		sectionLabel(i18n.T("openDialog.engine")),
 		engine,
 		gap(8),
-		sectionLabel("Path"),
+		sectionLabel(i18n.T("openDialog.path")),
 		pathRow,
 		gap(8),
 		newTab,
@@ -73,7 +72,7 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 	)
 	content := container.New(layout.NewCustomPaddedLayout(4, 4, 8, 8), body)
 
-	d := dialog.NewCustomConfirm("Open Database", "Open", "Cancel", content, func(confirmed bool) {
+	d := dialog.NewCustomConfirm(i18n.T("openDialog.title"), i18n.T("openDialog.confirm"), i18n.T("openDialog.cancel"), content, func(confirmed bool) {
 		if !confirmed {
 			return
 		}
@@ -94,9 +93,11 @@ func showOpenDatabase(parent fyne.Window, onConfirm func(OpenRequest)) {
 		// different engine, ask before trying to open with the wrong one.
 		if detected, ok := kvstore.DetectEngine(path.Text); ok && detected != kind {
 			dialog.ShowConfirm(
-				"Engine mismatch",
-				fmt.Sprintf("This folder looks like a %s database but you chose %s.\n\nOpen anyway?",
-					engineLabelFor(detected), engine.Selected),
+				i18n.T("openDialog.engineMismatch.title"),
+				i18n.Tf("openDialog.engineMismatch.body", map[string]any{
+					"Detected": engineLabelFor(detected),
+					"Chosen":   engine.Selected,
+				}),
 				func(yes bool) {
 					if yes {
 						onConfirm(req)

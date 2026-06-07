@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"github.com/mohsenm4/kv-explorer/internal/app"
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
@@ -27,7 +28,7 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
 	fg := themeColor(v, fynetheme.ColorNameForeground)
 
-	label := canvas.NewText("Value", muted)
+	label := canvas.NewText(i18n.T("editor.label"), muted)
 	label.TextSize = 12
 
 	keyText := canvas.NewText(string(entry.Key), fg)
@@ -75,18 +76,29 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		bodyStack.Refresh()
 	}
 
-	formatChoices := []string{"Auto", "Text", "Tree", "Hex", "Image"}
-	format := widget.NewRadioGroup(formatChoices, func(s string) {
-		rebuild(s)
+	formatIDs := []string{"Auto", "Text", "Tree", "Hex", "Image"}
+	formatLabels := []string{
+		i18n.T("editor.format.auto"),
+		i18n.T("editor.format.text"),
+		i18n.T("editor.format.tree"),
+		i18n.T("editor.format.hex"),
+		i18n.T("editor.format.image"),
+	}
+	labelToID := map[string]string{}
+	for i, id := range formatIDs {
+		labelToID[formatLabels[i]] = id
+	}
+	format := widget.NewRadioGroup(formatLabels, func(s string) {
+		rebuild(labelToID[s])
 	})
 	format.Horizontal = true
-	format.SetSelected("Auto")
+	format.SetSelected(formatLabels[0])
 	rebuild("Auto")
 
-	formatLabel := canvas.NewText("Format:", muted)
+	formatLabel := canvas.NewText(i18n.T("editor.format"), muted)
 	formatLabel.TextSize = 11
 
-	detection := canvas.NewText(fmt.Sprintf("Detected: %s", mime), muted)
+	detection := canvas.NewText(i18n.Tf("editor.detected", map[string]any{"Mime": mime}), muted)
 	detection.TextSize = 11
 
 	formatBar := container.NewBorder(nil, nil,
@@ -95,13 +107,13 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		nil,
 	)
 
-	cancel := widget.NewButton("Cancel", func() {
+	cancel := widget.NewButton(i18n.T("editor.cancel"), func() {
 		if reset != nil {
 			reset()
 		}
 	})
 	commit := func(data []byte) {
-		withProgress(parent, "Saving…", func() error {
+		withProgress(parent, i18n.T("progress.saving"), func() error {
 			if err := sess.Store.Set(entry.Key, data); err != nil {
 				return err
 			}
@@ -117,7 +129,7 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		})
 	}
 
-	save := widget.NewButton("Save changes", func() {
+	save := widget.NewButton(i18n.T("editor.save"), func() {
 		if current == nil {
 			return
 		}
@@ -130,16 +142,18 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		// original in both Text (>displayValueMax) and Hex
 		// (>hexEditFormatMax) modes. Saving without a confirm would
 		// silently destroy the tail.
-		mode := format.Selected
+		mode := labelToID[format.Selected]
 		isTextMode := mode == "Text" || (mode == "Auto" && detected == KindText)
 		isHexMode := mode == "Hex" || (mode == "Auto" && detected == KindBinary)
 		truncated := (isTextMode && len(entry.Value) > displayValueMax) ||
 			(isHexMode && len(entry.Value) > hexEditFormatMax)
 		if truncated && len(data) < len(entry.Value) {
 			dialog.ShowConfirm(
-				"Replace value?",
-				fmt.Sprintf("You're about to replace a %s value with %s. Anything past the visible buffer will be lost.\n\nUse Export to keep the full content.",
-					humanSize(int64(len(entry.Value))), humanSize(int64(len(data)))),
+				i18n.T("editor.replaceConfirm.title"),
+				i18n.Tf("editor.replaceConfirm.body", map[string]any{
+					"Old": humanSize(int64(len(entry.Value))),
+					"New": humanSize(int64(len(data))),
+				}),
 				func(yes bool) {
 					if yes {
 						commit(data)
@@ -155,12 +169,12 @@ func valueEditor(v fyne.ThemeVariant, sess *app.Session, parent fyne.Window, ent
 		cancel.Disable()
 	}
 
-	export := widget.NewButtonWithIcon("Export…", fynetheme.DownloadIcon(), func() {
+	export := widget.NewButtonWithIcon(i18n.T("editor.export"), fynetheme.DownloadIcon(), func() {
 		saver := dialog.NewFileSave(func(wc fyne.URIWriteCloser, err error) {
 			if err != nil || wc == nil {
 				return
 			}
-			withProgress(parent, "Exporting…", func() error {
+			withProgress(parent, i18n.T("progress.exporting"), func() error {
 				_, werr := wc.Write(entry.Value)
 				wc.Close()
 				return werr
@@ -223,28 +237,32 @@ func imageBody(v fyne.ThemeVariant, parent fyne.Window, value []byte, mime strin
 	img.FillMode = canvas.ImageFillContain
 	img.SetMinSize(fyne.NewSize(200, 200))
 
-	info := canvas.NewText(fmt.Sprintf("%s · %s", mime, humanSize(int64(len(value)))), muted)
+	info := canvas.NewText(i18n.Tf("editor.imageInfo", map[string]any{
+		"Mime": mime,
+		"Size": humanSize(int64(len(value))),
+	}), muted)
 	info.TextSize = 11
 
 	refreshPreview := func() {
 		img.Resource = fyne.NewStaticResource("value", staged)
 		img.Refresh()
 		_, m := DetectContent(staged)
-		suffix := ""
+		data := map[string]any{"Mime": m, "Size": humanSize(int64(len(staged)))}
 		if pending {
-			suffix = " · pending"
+			info.Text = i18n.Tf("editor.imageInfoPending", data)
+		} else {
+			info.Text = i18n.Tf("editor.imageInfo", data)
 		}
-		info.Text = fmt.Sprintf("%s · %s%s", m, humanSize(int64(len(staged))), suffix)
 		info.Refresh()
 	}
 
-	replace := widget.NewButtonWithIcon("Replace…", fynetheme.UploadIcon(), func() {
+	replace := widget.NewButtonWithIcon(i18n.T("editor.replace"), fynetheme.UploadIcon(), func() {
 		dialog.ShowFileOpen(func(rc fyne.URIReadCloser, err error) {
 			if err != nil || rc == nil {
 				return
 			}
 			var data []byte
-			withProgress(parent, "Loading file…", func() error {
+			withProgress(parent, i18n.T("progress.loadingFile"), func() error {
 				var ioErr error
 				data, ioErr = io.ReadAll(rc)
 				rc.Close()
@@ -284,7 +302,10 @@ func hexBody(v fyne.ThemeVariant, value []byte, mime string) (fyne.CanvasObject,
 	text.Wrapping = fyne.TextWrapBreak
 	text.SetText(hexEditFormat(value))
 
-	info := canvas.NewText(fmt.Sprintf("%s · %s · hex editable", mime, humanSize(int64(len(value)))), muted)
+	info := canvas.NewText(i18n.Tf("editor.hexInfo", map[string]any{
+		"Mime": mime,
+		"Size": humanSize(int64(len(value))),
+	}), muted)
 	info.TextSize = 11
 
 	body := container.NewBorder(nil, container.NewPadded(info), nil, nil, text)
@@ -413,7 +434,7 @@ func displayValue(v []byte) string {
 // emptyEditor is the placeholder shown before any row is selected.
 func emptyEditor(v fyne.ThemeVariant) fyne.CanvasObject {
 	muted := themeColor(v, fynetheme.ColorNamePlaceHolder)
-	t := canvas.NewText("Select a key to view its value", muted)
+	t := canvas.NewText(i18n.T("editor.placeholder"), muted)
 	t.TextSize = 12
 	t.Alignment = fyne.TextAlignCenter
 	return container.NewCenter(t)

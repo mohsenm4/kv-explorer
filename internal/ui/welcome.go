@@ -10,6 +10,7 @@ import (
 	fynetheme "fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
+	"github.com/mohsenm4/kv-explorer/internal/i18n"
 	"github.com/mohsenm4/kv-explorer/internal/kvstore"
 )
 
@@ -26,23 +27,23 @@ func welcomePage(s *AppState) fyne.CanvasObject {
 
 	hero := heroIcon(primary)
 
-	title := canvas.NewText("KV-Explorer", fg)
+	title := canvas.NewText(i18n.T("app.name"), fg)
 	title.TextSize = 22
 	title.TextStyle = fyne.TextStyle{Bold: true}
 	title.Alignment = fyne.TextAlignCenter
 
-	tagline := canvas.NewText("Inspect, edit, and compare key-value databases.", muted)
+	tagline := canvas.NewText(i18n.T("app.tagline"), muted)
 	tagline.TextSize = 14
 	tagline.Alignment = fyne.TextAlignCenter
 
-	open := widget.NewButtonWithIcon("Open Database…", fynetheme.FolderOpenIcon(), func() {
+	open := widget.NewButtonWithIcon(i18n.T("welcome.openDatabase"), fynetheme.FolderOpenIcon(), func() {
 		s.ShowOpenDialog()
 	})
 	open.Importance = widget.HighImportance
 
 	recents := recentsFromConfig(s.Recents())
 
-	openRecent := widget.NewButtonWithIcon("Open Recent", fynetheme.MenuDropDownIcon(), nil)
+	openRecent := widget.NewButtonWithIcon(i18n.T("welcome.openRecent"), fynetheme.MenuDropDownIcon(), nil)
 	openRecent.IconPlacement = widget.ButtonIconTrailingText
 	if len(recents) == 0 {
 		openRecent.Disable()
