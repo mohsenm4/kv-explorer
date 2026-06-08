@@ -13,23 +13,23 @@ var (
 	reEmail = regexp.MustCompile(`(?i)^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
 )
 
-// patternTag prefixes the preview when the whole value matches a common form
-// like a UUID or URL. The value itself is kept truncated to keep table rows
-// scannable.
-func patternTag(v []byte) string {
+// patternKind returns a content-kind tag ("UUID"/"URL"/"Email") and the
+// trimmed/truncated preview text when the whole value matches a common form.
+// Returns ("", "") when no pattern fits.
+func patternKind(v []byte) (kind, preview string) {
 	s := strings.TrimSpace(string(v))
 	if s == "" || len(s) > 2048 {
-		return ""
+		return "", ""
 	}
 	switch {
 	case reUUID.MatchString(s):
-		return "[UUID] " + s
+		return "UUID", s
 	case reURL.MatchString(s):
-		return "[URL] " + truncate(s, 100)
+		return "URL", truncate(s, 100)
 	case reEmail.MatchString(s):
-		return "[Email] " + s
+		return "Email", s
 	}
-	return ""
+	return "", ""
 }
 
 func truncate(s string, n int) string {

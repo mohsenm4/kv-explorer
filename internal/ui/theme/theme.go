@@ -81,6 +81,51 @@ func DBAccentTint(engine string, v fyne.ThemeVariant) color.Color {
 	return c
 }
 
+// KindAccent returns the badge color for a content-type tag rendered in the
+// key table ("JSON", "TXT", "IMG", "BIN", "UUID", "URL", "Email"). Unknown
+// kinds fall back to the placeholder grey so a new tag is always visible.
+func KindAccent(kind string, v fyne.ThemeVariant) color.Color {
+	dark := v == fynetheme.VariantDark
+	switch kind {
+	case "JSON":
+		if dark {
+			return rgb(0x60, 0xA5, 0xFA)
+		}
+		return rgb(0x25, 0x63, 0xEB)
+	case "TXT":
+		if dark {
+			return rgb(0x94, 0xA3, 0xB8)
+		}
+		return rgb(0x64, 0x74, 0x8B)
+	case "IMG":
+		if dark {
+			return rgb(0xC0, 0x84, 0xFC)
+		}
+		return rgb(0x9D, 0x4F, 0xD9)
+	case "BIN":
+		if dark {
+			return rgb(0xFB, 0x92, 0x3C)
+		}
+		return rgb(0xEA, 0x58, 0x0C)
+	case "UUID":
+		if dark {
+			return rgb(0x34, 0xD3, 0x99)
+		}
+		return rgb(0x10, 0xB9, 0x81)
+	case "URL":
+		if dark {
+			return rgb(0x22, 0xD3, 0xEE)
+		}
+		return rgb(0x06, 0xB6, 0xD4)
+	case "Email":
+		if dark {
+			return rgb(0xF8, 0x71, 0x71)
+		}
+		return rgb(0xEF, 0x44, 0x44)
+	}
+	return rgb(0x94, 0xA3, 0xB8)
+}
+
 // DBAccent returns the engine accent color (per spec §2.3); engine matches kvstore.EngineKind values, unknown falls back to placeholder.
 func DBAccent(engine string, v fyne.ThemeVariant) color.Color {
 	dark := v == fynetheme.VariantDark

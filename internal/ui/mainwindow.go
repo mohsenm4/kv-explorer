@@ -86,7 +86,7 @@ func mainPage(s *AppState) fyne.CanvasObject {
 		})
 	}
 
-	table = keyTable(sess, filter, loadEditorFor)
+	table = keyTable(sess, filter, v, loadEditorFor)
 	rebuildTree()
 
 	filterUI, filterEntry := filterRow(filter, func() {
