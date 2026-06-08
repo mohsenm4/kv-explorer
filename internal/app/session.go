@@ -17,6 +17,10 @@ type KeyMeta struct {
 	Key     string
 	Size    int
 	Preview string
+	// Kind is a coarse content tag ("JSON", "TXT", "IMG", "BIN", "UUID", "URL",
+	// "Email") that the table renders as a colored badge in front of Preview.
+	// Empty when the value is empty.
+	Kind string
 }
 
 type Session struct {
@@ -74,10 +78,12 @@ func (s *Session) reloadKeys() ([]KeyMeta, error) {
 	var out []KeyMeta
 	for it.Next() {
 		e := it.Entry()
+		preview, kind := makePreview(e.Value)
 		out = append(out, KeyMeta{
 			Key:     string(e.Key),
 			Size:    len(e.Value),
-			Preview: makePreview(e.Value),
+			Preview: preview,
+			Kind:    kind,
 		})
 	}
 	s.keys = out
@@ -93,9 +99,11 @@ func (s *Session) Close() error {
 	return s.Store.Close()
 }
 
-func makePreview(v []byte) string {
+// makePreview returns (preview, kind). The kind feeds the colored badge in the
+// key table; the preview is plain text without any bracketed prefix.
+func makePreview(v []byte) (string, string) {
 	if len(v) == 0 {
-		return ""
+		return "", ""
 	}
 	mime := http.DetectContentType(v)
 	isText := strings.HasPrefix(mime, "text/") || mime == "application/json"
@@ -105,15 +113,19 @@ func makePreview(v []byte) string {
 		}
 	}
 	if !isText {
-		return fmt.Sprintf("[%s · %s]", mime, humanSize(int64(len(v))))
+		kind := "BIN"
+		if strings.HasPrefix(mime, "image/") {
+			kind = "IMG"
+		}
+		return fmt.Sprintf("%s · %s", mime, humanSize(int64(len(v)))), kind
 	}
 
 	if jp := jsonPreview(v); jp != "" {
-		return jp
+		return jp, "JSON"
 	}
 
-	if tag := patternTag(v); tag != "" {
-		return tag
+	if kind, preview := patternKind(v); kind != "" {
+		return preview, kind
 	}
 
 	const max = 120
@@ -128,9 +140,9 @@ func makePreview(v []byte) string {
 		}
 	}
 	if len(s) > max {
-		return s[:max] + "…"
+		return s[:max] + "…", "TXT"
 	}
-	return s
+	return s, "TXT"
 }
 
 // Returns "" for non-JSON so the caller can fall back to the raw-text preview.
