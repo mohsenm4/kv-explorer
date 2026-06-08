@@ -28,11 +28,23 @@ func mainPage(s *AppState) fyne.CanvasObject {
 	var current *kvstore.Entry
 	var table *widget.Table
 	var toolbar toolbarHandles
+	var activeExt *externalEditSession
+
+	closeActiveExt := func() {
+		if activeExt != nil {
+			activeExt.Close()
+			activeExt = nil
+		}
+	}
 
 	loadEditorFor := func(e kvstore.Entry) {
+		closeActiveExt()
 		current = &e
 		editorBox.Objects = []fyne.CanvasObject{valueEditor(v, sess, w, e, func() {
 			table.Refresh()
+		}, func(es *externalEditSession) {
+			activeExt = es
+			s.RegisterExternalEdit(es)
 		})}
 		editorBox.Refresh()
 		if toolbar.editBtn != nil {
@@ -42,6 +54,7 @@ func mainPage(s *AppState) fyne.CanvasObject {
 	}
 
 	clearSelection := func() {
+		closeActiveExt()
 		current = nil
 		editorBox.Objects = []fyne.CanvasObject{emptyEditor(v)}
 		editorBox.Refresh()
